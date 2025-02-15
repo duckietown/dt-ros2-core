@@ -2,30 +2,24 @@
 
 import os
 from typing import Optional, Union
-
-from dt_computer_vision.camera import Pixel
 import numpy as np
-from dt_computer_vision.camera.types import NormalizedImagePoint, ResolutionIndependentImagePoint
+
+from dt_computer_vision.camera.types import Pixel, NormalizedImagePoint, ResolutionIndependentImagePoint
 from dt_computer_vision.ground_projection import GroundPoint
-from dt_computer_vision.ground_projection.rendering import debug_image
+from dt_computer_vision.ground_projection.rendering import draw_grid_image, debug_image
+from dt_computer_vision.camera import CameraModel
+from dt_computer_vision.ground_projection import GroundProjector
+from dt_computer_vision.camera.homography import Homography, HomographyToolkit
+
+
 import rospy
 from cv_bridge import CvBridge
-from duckietown_msgs.msg import Segment, SegmentList
+from duckietown_msgs.msg import Segment as SegmentMsg, SegmentList
 from sensor_msgs.msg import CameraInfo, CompressedImage
 from geometry_msgs.msg import Point as PointMsg
 
-from dt_computer_vision.camera import CameraModel
-from dt_computer_vision.ground_projection import GroundProjector
-
-from dt_computer_vision.camera.homography import Homography, HomographyToolkit
 from duckietown.dtros import DTROS, NodeType
 
-# FIXME: Is this still used?
-
-# @dataclass
-# class ImageProjectorConfig:
-#     roi : RegionOfInterest
-#     ppm : int
 
 
 class GroundProjectionNode(DTROS):
@@ -75,10 +69,6 @@ class GroundProjectionNode(DTROS):
         self._first_processing_done = False
         self.camera_info_received = False
 
-        # FIXME: Is this still used?
-        # self._image_projector_config: dict = rospy.get_param(
-        #     "~image_projector_configuration", None, type=dict
-        # )
 
         # subscribers
         self.sub_camera_info = rospy.Subscriber(
@@ -114,12 +104,6 @@ class GroundProjectionNode(DTROS):
 
         self.debug_img_bg = None
 
-        # Seems to be never used:
-        # TODO: what was the intent of these services? They seem to be redundant if we have a proper tf tree
-        # self.service_gnd_coord_ = rospy.Service("~get_ground_coordinate", GetGroundCoord,
-        # self.get_ground_coordinate_cb)
-        # self.service_img_coord_ = rospy.Service("~get_image_coordinate", GetImageCoord,
-        # self.get_image_coordinate_cb)
 
     def cb_camera_info(self, msg: CameraInfo):
         """
@@ -162,7 +146,6 @@ class GroundProjectionNode(DTROS):
 
         """
 
-        # TODO: check if we need to rectify the pixels
         if self.camera is None:
             raise ValueError("Camera model not initialized")
 
@@ -199,13 +182,15 @@ class GroundProjectionNode(DTROS):
 
         """
         if self.camera_info_received:
+            # the list of segments on the ground that we will publish
             seglist_out = SegmentList()
             seglist_out.header = seglist_msg.header
             colored_segments = {(255, 255, 255): [], (0,255,255): [], (255,0,0):[]}
 
             for received_segment in seglist_msg.segments:
-                received_segment: Segment
-                projected_segment = Segment()
+                received_segment: SegmentMsg
+                projected_segment = SegmentMsg()
+
                 projected_segment.points[0] = self.pixel_msg_to_ground_msg(
                     received_segment.pixels_normalized[0]
                 )
@@ -213,7 +198,6 @@ class GroundProjectionNode(DTROS):
                     received_segment.pixels_normalized[1]
                 )
                 projected_segment.color = received_segment.color
-                # TODO what about normal?
                 seglist_out.segments.append(projected_segment)
 
                 if projected_segment.color == 0:
@@ -230,7 +214,6 @@ class GroundProjectionNode(DTROS):
                 self._first_processing_done = True
 
             if self.pub_debug_road_view_img.get_num_connections() > 0:
-                #return  # TODO: Reimplement using debug_image from dt_computer_vision
                 debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(
                     debug_image(colored_segments,(300, 300), grid_size=6, s_segment_thickness=5)
                 )

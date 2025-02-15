@@ -8,9 +8,10 @@ procgraph-z6==6.1.9
 ros-node-utils==2.0.0
 compmake-z6==6.1.5
 
-# duckiedrone state estimator
+# duckiedrone nodes
 filterpy==1.4.5
-
+simple-pid
+numpy-quaternion
 
 # -- Duckietown --
 
@@ -19,7 +20,7 @@ dt-apriltags==3.1.7
 
 duckietown-utils-ente==7.0.0
 
-lib-dt-computer-vision==0.1.9
-lib-dt-state-estimation==0.0.9
+git+https://github.com/duckietown/lib-dt-computer-vision.git@ente
+git+https://github.com/duckietown/lib-dt-state-estimation.git@ente
 lib-dt-modeling==0.0.5
 lib-dt-motion-planning==0.0.1

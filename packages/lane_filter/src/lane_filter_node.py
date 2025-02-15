@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 
-# USES THE NEW WHEEL ENCODERS DATA
-
 import numpy as np
 import rospy
 from cv_bridge import CvBridge
 
+from dt_state_estimation.lane_filter import LaneFilterHistogram
 from dt_state_estimation.lane_filter.types import (
     Segment,
     SegmentPoint,
     SegmentColor,
 )
+from dt_state_estimation.lane_filter.rendering import plot_belief, plot_d_phi
 from duckietown.dtros import DTROS, NodeType, TopicType
 from duckietown_msgs.msg import LanePose, SegmentList, WheelEncoderStamped, EpisodeStart
 from duckietown_msgs.msg import Segment as SegmentMsg
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 
-from lane_filter import LaneFilterHistogram
 
 
 class LaneFilterNode(DTROS):
@@ -58,7 +57,8 @@ class LaneFilterNode(DTROS):
         )
 
         self._filter = rospy.get_param("~lane_filter_histogram_configuration", None)
-        self._debug = rospy.get_param("~debug", False)
+        #self._debug = rospy.get_param("~debug", False)
+        self._debug = True
         self._predict_freq = rospy.get_param("~predict_frequency", 30.0)
         #Enocder Init
         self.right_encoder_ticks = 0
@@ -71,21 +71,18 @@ class LaneFilterNode(DTROS):
 
         # Load the needed filter parameters defined elsewhere need here
         try:
-            encoder_resolution = rospy.get_param("left_wheel_encoder_driver_node/resolution", 135)
-            wheel_baseline = rospy.get_param("kinematics_node/baseline")
-            wheel_radius = rospy.get_param("kinematics_node/radius")
+            self._filter['encoder_resolution'] = rospy.get_param("left_wheel_encoder_driver_node/resolution", 135)
+            self._filter['wheel_baseline'] = rospy.get_param("kinematics_node/baseline")
+            self._filter['wheel_radius'] = rospy.get_param("kinematics_node/radius")
         except rospy.KeyError as e:
             rospy.logerror(f"[Lane filter] Unable to load required param: {e}")
 
         # Create the filter
-        self.filter = LaneFilterHistogram(encoder_resolution,
-                                          wheel_baseline,
-                                          wheel_radius,
-                                          **self._filter)
+        self.filter = LaneFilterHistogram(**self._filter)
 
 
         # this is only used for the timestamp of the first publication
-        self.last_update_stamp = rospy.Time.now()
+        self.last_update_header = None
 
 
         # Creating cvBridge
@@ -112,20 +109,19 @@ class LaneFilterNode(DTROS):
             "~lane_pose", LanePose, queue_size=1, dt_topic_type=TopicType.PERCEPTION
         )
 
-        # NEW DEBUG RENDERING: to be enabled, also replaces the one below
-        # self.pub_belief_img = rospy.Publisher(
-        #     "~debug/belief_img/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
-        # )
-
         self.pub_belief_img = rospy.Publisher(
-            # TODO: this should be a CompressedImage instead
-            "~belief_img", Image, queue_size=1, dt_topic_type=TopicType.DEBUG
+             "~debug/belief_img/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
         )
+
+        self.pub_plot_d_phi = rospy.Publisher(
+            "~debug/plot_d_phi/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
+        )
+
 
 
         # Set up a timer for prediction (if we got encoder data) since that data can come very quickly
   #      rospy.Timer(rospy.Duration(1 / self._predict_freq), self.cbPredict)
-        self.publishEstimate(self.last_update_stamp)
+        self.publishEstimate(self.last_update_header)
 
 
     def cbEpisodeStart(self, msg):
@@ -166,7 +162,6 @@ class LaneFilterNode(DTROS):
 
     def cbPredict(self):
         if self.left_encoder_ticks_delta == 0 or self.right_encoder_ticks_delta == 0:
-            self.publishEstimate(self.last_update_stamp)
             return
         self.filter.predict(self.left_encoder_ticks_delta, self.right_encoder_ticks_delta)
         self.left_encoder_ticks += self.left_encoder_ticks_delta
@@ -174,7 +169,7 @@ class LaneFilterNode(DTROS):
         self.left_encoder_ticks_delta = 0
         self.right_encoder_ticks_delta = 0
 
-        self.publishEstimate(self.last_update_stamp)
+        self.publishEstimate(self.last_update_header)
 
     def cbProcessSegments(self, segment_list_msg):
         """Callback to process the segments
@@ -184,24 +179,43 @@ class LaneFilterNode(DTROS):
 
         """
         self.cbPredict()
-        self.last_update_stamp = segment_list_msg.header.stamp
+        self.last_update_header = segment_list_msg.header
+        dt_segment_list = []
+        # we need to parse the data in the ROS data struct and port into a dt data struct
+        for segment in segment_list_msg.segments:
+            dt_segment_color = None
+            if segment.color == SegmentMsg.WHITE:
+                dt_segment_color = SegmentColor.WHITE
+            elif segment.color == SegmentMsg.YELLOW:
+                dt_segment_color = SegmentColor.YELLOW
+            elif segment.color == SegmentMsg.RED:
+                dt_segment_color = SegmentColor.RED
 
-        self.filter.update(segment_list_msg.segments)
+            dt_points = []
+            for point in segment.points:
+                dt_point = SegmentPoint(x=point.x, y=point.y)
+                dt_points.append(dt_point)
 
-        self.publishEstimate(segment_list_msg.header.stamp)
+            dt_segment = Segment(points=dt_points, color=dt_segment_color)
+            dt_segment_list.append(dt_segment)
 
-    def publishEstimate(self, timestamp):
 
-        [d_max, phi_max] = self.filter.getEstimate()
+        self.filter.update(dt_segment_list)
+
+        self.publishEstimate(segment_list_msg.header)
+
+    def publishEstimate(self, header):
+
+        [d_max, phi_max] = self.filter.get_estimate()
 
         # Getting the highest belief value from the belief matrix
-        max_val = self.filter.getMax()
+        max_val = self.filter.get_max()
         # Comparing it to a minimum belief threshold to make sure we are certain enough of our estimate
         in_lane = max_val > self.filter.min_max
 
         # build lane pose message to send
         lanePose = LanePose()
-        lanePose.header.stamp = timestamp
+        lanePose.header = header
         lanePose.d = d_max
         lanePose.phi = phi_max
         lanePose.in_lane = in_lane
@@ -211,27 +225,26 @@ class LaneFilterNode(DTROS):
         self.pub_lane_pose.publish(lanePose)
         if self._debug:
             self.debugOutput()
+
     def debugOutput(self):
         """Creates and publishes debug messages
 
         """
         if self._debug:
             # Create belief image and publish it
-            belief_img = self.bridge.cv2_to_imgmsg(
-                np.array(255 * self.filter.belief).astype("uint8"), "mono8"
+             # LP : this is too heavy for now: (a) should be offloaded onto base station (b) should be faster
+            # belief_img = self.bridge.cv2_to_compressed_imgmsg(
+            # plot_belief(self.filter, dpi=30)
+            #)
+            #self.pub_belief_img.publish(belief_img)
+
+            d_max, phi_max = self.filter.get_estimate()
+            plot_d_phi_img = self.bridge.cv2_to_compressed_imgmsg(
+                plot_d_phi(d=d_max, phi=phi_max)
             )
-            #belief_img.header.stamp = segment_list_msg.header.stamp # FIXME: REPLACE WITH ENCODER TIMESTAMPS MAYBE
-            self.pub_belief_img.publish(belief_img)
 
+            self.pub_plot_d_phi.publish(plot_d_phi_img)
 
-            # NEW RENDERING: to be enabled
-            # if self.pub_belief_img.get_num_connections() > 0:
-            #     debug_img_msg = self.bridge.cv2_to_compressed_imgmsg(plot_d_phi(d=d_max, phi=phi_max))
-            #     debug_img_msg.header = segment_list_msg.header
-            #     self.pub_belief_img.publish(debug_img_msg)
-
-            #FIXME: USE THE Visualization of the lane filter
-            #self.filter.get_plot_phi_d()
 
     def loginfo(self, s):
         rospy.loginfo("[%s] %s" % (self.node_name, s))

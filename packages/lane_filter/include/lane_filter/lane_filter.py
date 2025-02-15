@@ -178,13 +178,6 @@ class LaneFilterHistogram():
         segmentsArray = []
         self.filtered_segments = []
         for segment in segments:
-            # Optional transform from RED to WHITE
-            if self.red_to_white and segment.color == segment.RED:
-                segment.color = segment.WHITE
-
-            # Optional filtering out YELLOW
-            if not self.use_yellow and segment.color == segment.YELLOW:
-                continue
 
             # we don't care about RED ones for now
             if segment.color != segment.WHITE and segment.color != segment.YELLOW:
@@ -192,20 +185,12 @@ class LaneFilterHistogram():
             # filter out any segments that are behind us
             if segment.points[0].x < 0 or segment.points[1].x < 0:
                 continue
-            #filter segments over and behind by 20cm
-            #if (segment.points[0].y < -0.2 and segment.points[1].y < -0.2) or (segment.points[0].y > 0.2 and segment.points[1].y > 0.2):
-            #    continue
 
             self.filtered_segments.append(segment)
             # only consider points in a certain range from the Duckiebot for the position estimation
             point_range = self.getSegmentDistance(segment)
             if self.range_est > point_range > self.range_est_min:
                 segmentsArray.append(segment)
-                # print functions to help understand the functionality of the code
-                # print('Adding segment to segmentsRangeArray[0] (Range: %s < 0.3)' % (point_range))
-                # print('Printout of last segment added: %s' % self.getSegmentDistance(segmentsArray[
-                # 0][-1]))
-                # print('Length of segmentsArray[0] up to now: %s' % len(segmentsArray[0]))
 
         return segmentsArray
 
@@ -232,7 +217,7 @@ class LaneFilterHistogram():
         measurement_likelihood = np.zeros(self.d.shape)
 
         for segment in segments:
-            d_i, phi_i, l_i, weight = self.generateVote(segment)
+            d_i, phi_i = self.generateVote(segment)
 
             # if the vote lands outside of the histogram discard it
             if d_i > self.d_max or d_i < self.d_min or phi_i < self.phi_min or phi_i > self.phi_max:
@@ -301,19 +286,8 @@ class LaneFilterHistogram():
                 d_i += self.linewidth_yellow
                 d_i -= self.lanewidth/2
 
-        # weight = distance
-        weight = 1
-        return d_i, phi_i, l_i, weight
+        return d_i, phi_i
 
-    ###NOT USED ANYMORE
-    # def get_inlier_segments(self, segments, d_max, phi_max):
-    #     inlier_segments = []
-    #     for segment in segments:
-    #         d_s, phi_s, l, w = self.generateVote(segment)
-    #         if abs(d_s - d_max) < self.delta_d and abs(phi_s - phi_max) < self.delta_phi:
-    #             inlier_segments.append(segment)
-    #     return inlier_segments
-    ###
 
     # get the distance from the center of the Duckiebot to the center point of a segment
     def getSegmentDistance(self, segment):

@@ -10,8 +10,8 @@ compmake-z6==6.1.5
 
 # duckiedrone nodes
 filterpy==1.4.5
-simple-pid==2.0.1
-numpy-quaternion==2024.0.7
+simple-pid<=2.0.1
+numpy-quaternion==2023.0.4
 
 # -- Duckietown --
 

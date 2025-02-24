@@ -39,7 +39,8 @@ class LanePoseVisualizer(DTROS):
         marker.id = 0
         marker.action = Marker.ADD
         marker.lifetime = rospy.Duration.from_sec(0.5)
-        marker.type = Marker.ARROW
+        marker.type = Marker.MESH_RESOURCE
+        marker.mesh_resource = "package://visualization_tools/meshes/duckiebot.stl"
 
         # Get rotation in quaternion
         yaw_quat = tf.transformations.quaternion_about_axis(-lane_pose_msg.phi, [0, 0, 1])

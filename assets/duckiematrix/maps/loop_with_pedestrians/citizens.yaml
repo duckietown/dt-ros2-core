@@ -1,0 +1,10 @@
+version: 1.0
+citizens:
+  map_0/duckie_0:
+    color: yellow
+  map_0/duckie_1:
+    color: red
+  map_0/duckie_2:
+    color: grey
+  map_0/duckie_3:
+    color: green

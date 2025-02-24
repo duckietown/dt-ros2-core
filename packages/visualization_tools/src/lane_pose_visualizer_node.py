@@ -54,13 +54,13 @@ class LanePoseVisualizer(DTROS):
         marker.pose.position.y = -lane_pose_msg.d
         marker.pose.position.z = 0.0
 
-        marker.scale.x = 0.3
-        marker.scale.y = 0.05
-        marker.scale.z = 0.01
+        marker.scale.x = 1.0
+        marker.scale.y = 1.0
+        marker.scale.z = 1.0
 
         marker.color.r = 0.0
-        marker.color.g = 0.5
-        marker.color.b = 0.0
+        marker.color.g = 0.0
+        marker.color.b = 0.5
 
         if lane_pose_msg.status == LanePose.NORMAL:
             marker.color.a = 1.0

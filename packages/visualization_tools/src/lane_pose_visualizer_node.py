@@ -4,6 +4,7 @@ import tf
 from duckietown.dtros import DTROS, NodeType, TopicType
 from duckietown_msgs.msg import LanePose
 from visualization_msgs.msg import Marker, MarkerArray
+from dt_robot_utils import get_robot_configuration
 
 
 class LanePoseVisualizer(DTROS):
@@ -14,6 +15,7 @@ class LanePoseVisualizer(DTROS):
         # Get vehicle name from namespace
         self.veh_name = rospy.get_namespace().strip("/")
         rospy.loginfo(f"[{self.node_name}] Vehicle name: {self.veh_name}")
+        self.robot_configuration = get_robot_configuration()
 
         # Setup publisher
         self.pub_markers = rospy.Publisher(
@@ -40,7 +42,32 @@ class LanePoseVisualizer(DTROS):
         marker.action = Marker.ADD
         marker.lifetime = rospy.Duration.from_sec(0.5)
         marker.type = Marker.MESH_RESOURCE
-        marker.mesh_resource = "package://visualization_tools/meshes/duckiebot.stl"
+        if self.robot_configuration.name in ("DB18", "DB19", "DB20"):
+            marker.mesh_resource = "package://visualization_tools/meshes/DB18.stl"
+            marker.color.r = 0.5
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            marker.scale.x = 1.0
+            marker.scale.y = 1.0
+            marker.scale.z = 1.0
+
+        elif self.robot_configuration.name in ("DB21M", "DB21J"):
+            marker.mesh_resource = "package://visualization_tools/meshes/DB21J.stl"
+            marker.color.r = 0.0
+            marker.color.g = 0.0
+            marker.color.b = 0.5
+            marker.scale.x = 0.1
+            marker.scale.y = 0.1
+            marker.scale.z = 0.1
+        else:
+            marker.type = Marker.ARROW
+            marker.color.r = 0.0
+            marker.color.g = 0.5
+            marker.color.b = 0.0
+            marker.scale.x = 0.3
+            marker.scale.y = 0.05
+            marker.scale.z = 0.01
+
 
         # Get rotation in quaternion
         yaw_quat = tf.transformations.quaternion_about_axis(-lane_pose_msg.phi, [0, 0, 1])
@@ -54,13 +81,8 @@ class LanePoseVisualizer(DTROS):
         marker.pose.position.y = -lane_pose_msg.d
         marker.pose.position.z = 0.0
 
-        marker.scale.x = 1.0
-        marker.scale.y = 1.0
-        marker.scale.z = 1.0
 
-        marker.color.r = 0.0
-        marker.color.g = 0.0
-        marker.color.b = 0.5
+
 
         if lane_pose_msg.status == LanePose.NORMAL:
             marker.color.a = 1.0

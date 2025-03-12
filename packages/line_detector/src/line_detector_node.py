@@ -9,7 +9,7 @@ from sensor_msgs.msg import CompressedImage, Image
 from duckietown_msgs.msg import Segment as SegmentMsg, SegmentList, AntiInstagramThresholds
 from dt_computer_vision.line_detection import LineDetector, ColorRange, Detections
 from dt_computer_vision.line_detection.rendering import draw_segments, draw_maps
-from image_processing.anti_instagram import AntiInstagram
+from dt_computer_vision.anti_instagram import AntiInstagram
 
 from duckietown.dtros import DTROS, NodeType, TopicType, DTParam
 
@@ -152,8 +152,10 @@ class LineDetectorNode(DTROS):
         
         # Perform color correction
         if self.ai_thresholds_received:
-            obtained_image = self.ai.apply_color_balance(
-                self.anti_instagram_thresholds["lower"], self.anti_instagram_thresholds["higher"], obtained_image
+            obtained_image = self.ai.apply(
+                image = obtained_image,
+                lower_threshold = self.anti_instagram_thresholds["lower"],
+                higher_threshold = self.anti_instagram_thresholds["higher"]
             )
 
         if self.cuda_enabled:

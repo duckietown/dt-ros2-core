@@ -81,12 +81,12 @@ class AntiInstagramNode(DTROS):
             self.log("Waiting for first image!")
             return
         image = self.decode_image_msg()
-        (lower_thresholds, higher_thresholds) = self.ai.update(image)
+        self.ai.update(image)
 
         # Publish parameters
         msg = AntiInstagramThresholds()
-        msg.low = lower_thresholds
-        msg.high = higher_thresholds
+        msg.low = self.ai.lower_threshold
+        msg.high = self.ai.higher_threshold
         self.pub.publish(msg)
 
 

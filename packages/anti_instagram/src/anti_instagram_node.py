@@ -3,6 +3,7 @@
 import rospy
 from multiprocessing import Lock
 from dt_computer_vision.anti_instagram import AntiInstagram
+from dt_computer_vision.camera import BGRImage
 from cv_bridge import CvBridge
 from sensor_msgs.msg import CompressedImage
 from duckietown_msgs.msg import AntiInstagramThresholds
@@ -68,7 +69,7 @@ class AntiInstagramNode(DTROS):
         with self.mutex:
             self.image_msg = image_msg
 
-    def decode_image_msg(self):
+    def decode_image_msg(self) -> BGRImage:
         with self.mutex:
             try:
                 image = self.bridge.compressed_imgmsg_to_cv2(self.image_msg, "bgr8")
@@ -81,12 +82,12 @@ class AntiInstagramNode(DTROS):
             self.log("Waiting for first image!")
             return
         image = self.decode_image_msg()
-        (lower_thresholds, higher_thresholds) = self.ai.update(image)
+        self.ai.update(image)
 
         # Publish parameters
         msg = AntiInstagramThresholds()
-        msg.low = lower_thresholds
-        msg.high = higher_thresholds
+        msg.low = self.ai.lower_threshold
+        msg.high = self.ai.higher_threshold
         self.pub.publish(msg)
 
 

@@ -20,4 +20,4 @@ cameras:
     - 0.0
     width: 640
     height: 480
-    framerate: 30
+    frame_rate: 30

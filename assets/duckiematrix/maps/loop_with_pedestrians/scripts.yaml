@@ -2,13 +2,13 @@ version: 1.0
 scripts:
   map_0/duckie_0:
     scripts:
-      - StraightLineScript
+      - straight_line_script
   map_0/duckie_1:
     scripts:
-      - StraightLineScript
+      - straight_line_script
   map_0/duckie_2:
     scripts:
-      - StraightLineScript
+      - straight_line_script
   map_0/duckie_3:
     scripts:
-      - StraightLineScript
+      - straight_line_script

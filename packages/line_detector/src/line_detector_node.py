@@ -50,11 +50,15 @@ class LineDetectorNode(DTROS):
 
     def __init__(self, node_name):
         # Initialize the DTROS parent class
-        super(LineDetectorNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
+        super(LineDetectorNode, self).__init__(
+            node_name=node_name,
+            node_type=NodeType.PERCEPTION,
+            fsm_controlled=False)
 
         # Define parameters
         self._line_detector_parameters = rospy.get_param("~line_detector_parameters", None)
         self._veh = rospy.get_param("~veh")
+        self._debug = rospy.get_param("~debug", False)
         self._img_size = rospy.get_param("~img_size", None)
         self._top_cutoff = rospy.get_param("~top_cutoff", None)
         self._colors = DTParam("~colors", None)
@@ -81,7 +85,11 @@ class LineDetectorNode(DTROS):
 
         # Publishers
         self.pub_lines = rospy.Publisher(
-            "~segment_list", SegmentList, queue_size=1, dt_topic_type=TopicType.PERCEPTION
+            "~segment_list",
+            SegmentList,
+            queue_size=1,
+            dt_topic_type=TopicType.PERCEPTION,
+            tcp_nodelay=True
         )
         self.pub_d_segments = rospy.Publisher(
             "~debug/segments/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
@@ -142,6 +150,9 @@ class LineDetectorNode(DTROS):
             image_msg (:obj:`sensor_msgs.msg.CompressedImage`): The receive image message
 
         """
+        start = rospy.Time.now()
+        data_received_stamp = image_msg.header.stamp
+        self.loginfo(f"Incoming latency: {(start - data_received_stamp).to_sec()}")
 
         # Decode from compressed image with OpenCV
         try:
@@ -149,14 +160,8 @@ class LineDetectorNode(DTROS):
         except ValueError as e:
             self.logerr(f"Could not decode image: {e}")
             return
-        
-        # Perform color correction
-        if self.ai_thresholds_received:
-            obtained_image = self.ai.apply(
-                image = obtained_image,
-                lower_threshold = self.anti_instagram_thresholds["lower"],
-                higher_threshold = self.anti_instagram_thresholds["higher"]
-            )
+        self.loginfo(f"Time to decode: {(rospy.Time.now() - start).to_sec()}")
+
 
         if self.cuda_enabled:
             gpu_image = cv2.cuda_GpuMat()
@@ -174,6 +179,17 @@ class LineDetectorNode(DTROS):
                 gpu_image = cv2.resize(gpu_image, img_size, interpolation=cv2.INTER_NEAREST)
 
         gpu_image = gpu_image[self._top_cutoff :, :, :]
+        self.loginfo(f"Time to resize: {(rospy.Time.now() - start).to_sec()}")
+
+        # Perform color correction
+        if self.ai_thresholds_received:
+            obtained_image = self.ai.apply(
+                image = obtained_image,
+                lower_threshold = self.anti_instagram_thresholds["lower"],
+                higher_threshold = self.anti_instagram_thresholds["higher"]
+            )
+        self.loginfo(f"Time to correct: {(rospy.Time.now() - start).to_sec()}")
+
 
         # mirror the gpu_image if left-hand traffic mode is set
         if self._traffic_mode.value == "LHT":
@@ -184,6 +200,9 @@ class LineDetectorNode(DTROS):
         # Extract the line segments for every color
         color_detections: List[Detections] = (
             self.detector.detect(gpu_image, colors_to_detect))
+
+        self.loginfo(f"Time to detect: {(rospy.Time.now() - start).to_sec()}")
+
 
         dets: Dict[str, dict] ={}
         for i, detections in enumerate(color_detections):
@@ -227,7 +246,8 @@ class LineDetectorNode(DTROS):
 
         # Publish the message
         self.pub_lines.publish(segment_list)
-        
+        self.loginfo(f"Time to publish: {(rospy.Time.now() - start).to_sec()}")
+
         if self.cuda_enabled:
             # Download the image from gpu memory
             image = gpu_image.download()
@@ -235,51 +255,52 @@ class LineDetectorNode(DTROS):
             # Just rename appropriately the image variable
             image = gpu_image
 
-        # If there are any subscribers to the debug topics, generate a debug image and publish it
-        if self.pub_d_segments.get_num_connections() > 0:
-            debug_img = draw_segments(image,
+        if self._debug:
+            # If there are any subscribers to the debug topics, generate a debug image and publish it
+            if self.pub_d_segments.get_num_connections() > 0:
+                debug_img = draw_segments(image,
+                                          {
+                                            self.color_ranges["YELLOW"]: color_detections[0],
+                                            self.color_ranges["WHITE"]: color_detections[1],
+                                            self.color_ranges["RED"]: color_detections[2]
+                                          }
+                                        )
+
+                # mirror the image if left-hand traffic mode is set
+                if self._traffic_mode.value == "LHT":
+                    debug_img = np.fliplr(debug_img)
+                debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(debug_img)
+                debug_image_msg.header = image_msg.header
+                self.pub_d_segments.publish(debug_image_msg)
+
+            if self.pub_d_edges.get_num_connections() > 0:
+                canny_edges = self.detector.find_edges(image,
+                                                       self.detector.canny_thresholds[0],
+                                                       self.detector.canny_thresholds[1],
+                                                       self.detector.canny_aperture_size
+                                                       )
+                # mirror the image if left-hand traffic mode is set
+                if self._traffic_mode.value == "LHT":
+                    canny_edges = np.fliplr(canny_edges)
+                debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(canny_edges)
+                debug_image_msg.header = image_msg.header
+                self.pub_d_edges.publish(debug_image_msg)
+
+            if self.pub_d_maps.get_num_connections() > 0:
+    #            colorrange_detections = {self.color_ranges[c]: det for c, det in list(detections.items())}
+                debug_img = draw_maps(image,
                                       {
-                                        self.color_ranges["YELLOW"]: color_detections[0],
-                                        self.color_ranges["WHITE"]: color_detections[1],
-                                        self.color_ranges["RED"]: color_detections[2]
+                                          self.color_ranges["YELLOW"]: color_detections[0],
+                                          self.color_ranges["WHITE"]: color_detections[1],
+                                          self.color_ranges["RED"]: color_detections[2]
                                       }
-                                    )
-
-            # mirror the image if left-hand traffic mode is set
-            if self._traffic_mode.value == "LHT":
-                debug_img = np.fliplr(debug_img)
-            debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(debug_img)
-            debug_image_msg.header = image_msg.header
-            self.pub_d_segments.publish(debug_image_msg)
-
-        if self.pub_d_edges.get_num_connections() > 0:
-            canny_edges = self.detector.find_edges(image,
-                                                   self.detector.canny_thresholds[0],
-                                                   self.detector.canny_thresholds[1],
-                                                   self.detector.canny_aperture_size
-                                                   )
-            # mirror the image if left-hand traffic mode is set
-            if self._traffic_mode.value == "LHT":
-                canny_edges = np.fliplr(canny_edges)
-            debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(canny_edges)
-            debug_image_msg.header = image_msg.header
-            self.pub_d_edges.publish(debug_image_msg)
-
-        if self.pub_d_maps.get_num_connections() > 0:
-#            colorrange_detections = {self.color_ranges[c]: det for c, det in list(detections.items())}
-            debug_img = draw_maps(image,
-                                  {
-                                      self.color_ranges["YELLOW"]: color_detections[0],
-                                      self.color_ranges["WHITE"]: color_detections[1],
-                                      self.color_ranges["RED"]: color_detections[2]
-                                  }
-                                  )
-            # mirror the image if left-hand traffic mode is set
-            if self._traffic_mode.value == "LHT":
-                debug_img = np.fliplr(debug_img)
-            debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(debug_img)
-            debug_image_msg.header = image_msg.header
-            self.pub_d_maps.publish(debug_image_msg)
+                                      )
+                # mirror the image if left-hand traffic mode is set
+                if self._traffic_mode.value == "LHT":
+                    debug_img = np.fliplr(debug_img)
+                debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(debug_img)
+                debug_image_msg.header = image_msg.header
+                self.pub_d_maps.publish(debug_image_msg)
 
 
     @staticmethod

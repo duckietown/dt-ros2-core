@@ -1,3 +1,4 @@
+debug: False
 image_projector_configuration:
   ppm: 800
   roi:

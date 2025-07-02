@@ -1,3 +1,4 @@
+debug: True
 img_size: [120,160]
 top_cutoff: 40
 

@@ -2,4 +2,4 @@ version: 1.0
 scripts:
   map_0/duckie_0:
     scripts:
-      - RunInCircleScript
+      - run_in_circle_script

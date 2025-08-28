@@ -121,7 +121,6 @@ class LaneFilterNode(DTROS):
 
         # Set up a timer for prediction (if we got encoder data) since that data can come very quickly
   #      rospy.Timer(rospy.Duration(1 / self._predict_freq), self.cbPredict)
-        self.publishEstimate(self.last_update_header)
 
 
     def cbEpisodeStart(self, msg):

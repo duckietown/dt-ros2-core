@@ -3,7 +3,6 @@
 import os
 from typing import Optional, Union
 import numpy as np
-from aiohttp.tcp_helpers import tcp_nodelay
 
 from dt_computer_vision.camera.types import Pixel, NormalizedImagePoint, ResolutionIndependentImagePoint
 from dt_computer_vision.ground_projection import GroundPoint
@@ -103,8 +102,6 @@ class GroundProjectionNode(DTROS):
             CompressedImage,
             queue_size=1,
         )
-
-        self.bridge = CvBridge()
 
         self.debug_img_bg = None
 

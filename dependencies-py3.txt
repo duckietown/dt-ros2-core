@@ -1,26 +1,17 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
 
-ruamel.yaml==0.18.5
-
-comptests-z6==6.0.4
-
-procgraph-z6==6.1.9
-ros-node-utils==2.0.0
-compmake-z6==6.1.5
-
 # duckiedrone nodes
-filterpy==1.4.5
+filterpy
 simple-pid<=2.0.1
 numpy-quaternion==2023.0.4
 
 # -- Duckietown --
 
-# ATags3 Python bindings
-dt-apriltags==3.1.7
-
 duckietown-utils-ente==7.0.0
 
 git+https://github.com/duckietown/lib-dt-computer-vision.git@ente
 git+https://github.com/duckietown/lib-dt-state-estimation.git@ente
-lib-dt-modeling==0.0.5
-lib-dt-motion-planning==0.0.1
+
+#### TODO: fix numpy version in lib-dt-modeling #116
+#lib-dt-modeling==0.0.5
+#lib-dt-motion-planning==0.0.1

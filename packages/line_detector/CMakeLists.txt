@@ -1,20 +1,22 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(line_detector)
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  duckietown_msgs # Every duckietown packages should use this.
-  cv_bridge
-  # XXX add anti_instagram?
+find_package(ament_cmake REQUIRED)
+
+# Install the Python node script
+install(PROGRAMS
+  src/line_detector_node.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
-catkin_python_setup()
-
-
-catkin_package()
-
-
-include_directories(
-  ${catkin_INCLUDE_DIRS}
+# Install launch files
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch/
 )
+
+# Install config files
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config/
+)
+
+ament_package()

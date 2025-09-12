@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ground_projection</name>
+  <version>1.0.0</version>
+  <description>Projects image line segments onto the ground plane using camera extrinsics (ROS 2).</description>
+
+  <author email="cchoi@csail.mit.edu">Changhyun Choi</author>
+  <maintainer email="davide.iafrate@duckietown.com">Davide Iafrate</maintainer>
+
+  <license>GPLv3</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>duckietown_msgs</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

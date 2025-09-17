@@ -99,6 +99,24 @@ class LineDetectorNode(Node):
         ldp_clean = {k: v.value for k, v in ldp.items()}
         self.detector = LineDetector(**ldp_clean)
 
+        # Default color ranges from config file
+        self.default_colors = {
+            "RED": {
+                "low_1": [0, 140, 100],
+                "high_1": [15, 255, 255],
+                "low_2": [165, 140, 100],
+                "high_2": [180, 255, 255]
+            },
+            "WHITE": {
+                "low": [0, 0, 150],
+                "high": [180, 100, 255]
+            },
+            "YELLOW": {
+                "low": [25, 140, 100],
+                "high": [45, 255, 255]
+            }
+        }
+
         # Initialize color ranges from parameters under prefix 'colors'
         self.color_ranges: Dict[str, ColorRange] = {}
         self.on_colors_range_change()
@@ -142,6 +160,11 @@ class LineDetectorNode(Node):
             if color not in colors:
                 colors[color] = {}
             colors[color][key] = param.value
+
+        # If no color parameters found, use defaults
+        if not colors:
+            colors = self.default_colors
+            self.get_logger().info("No color parameters found, using default values")
 
         self.color_ranges = {
             color: ColorRange.fromDict(d) for color, d in colors.items()
@@ -298,12 +321,11 @@ class LineDetectorNode(Node):
             self.pub_d_edges.publish(debug_image_msg)
 
         if self.pub_d_maps.get_subscription_count() > 0:
-#            colorrange_detections = {self.color_ranges[c]: det for c, det in list(detections.items())}
             debug_img = draw_maps(image,
                                   {
                                       self.color_ranges["YELLOW"]: color_detections[0],
                                       self.color_ranges["WHITE"]: color_detections[1],
-                                      self.color_ranges["RED"]: color_detections[2]
+                                      self.color_ranges["RED"]: color_detections[2],
                                   }
                                   )
             # mirror the image if left-hand traffic mode is set

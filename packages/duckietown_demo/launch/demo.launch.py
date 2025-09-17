@@ -14,6 +14,11 @@ def generate_launch_description():
     ld_default_params = os.path.join(ld_pkg_share, 'config', 'line_detector_node', 'default.yaml')
     params = [ld_default_params] if os.path.isfile(ld_default_params) else []
 
+    # Optional: use lane_filter default params if available
+    lf_pkg_share = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lane_filter'))
+    lf_default_params = os.path.join(lf_pkg_share, 'config', 'lane_filter_node', 'default.yaml')
+    lf_params = [lf_default_params] if os.path.isfile(lf_default_params) else []
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'veh',
@@ -21,7 +26,7 @@ def generate_launch_description():
             description='Vehicle namespace (e.g., megaman)'
         ),
         GroupAction([
-            PushRosNamespace(veh),
+            # PushRosNamespace(veh),
 
             # Line detector node
             Node(
@@ -47,6 +52,17 @@ def generate_launch_description():
                     # ('camera_info', 'camera_node/camera_info'),
                 ],
             ),
+
+            # Lane filter node (consumes ground-projected segments)
+            Node(
+                package='lane_filter',
+                executable='lane_filter_node',
+                name='lane_filter_node',
+                output='screen',
+                parameters=lf_params,
+                remappings=[
+                    ('segment_list', 'lineseglist_out'),
+                ],
+            ),
         ]),
     ])
-

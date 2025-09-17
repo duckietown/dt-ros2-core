@@ -10,7 +10,7 @@ numpy-quaternion==2023.0.4
 duckietown-utils-ente==7.0.0
 
 git+https://github.com/duckietown/lib-dt-computer-vision.git@ente
-git+https://github.com/duckietown/lib-dt-state-estimation.git@ente
+lib-dt-state-estimation==0.0.10
 
 #### TODO: fix numpy version in lib-dt-modeling #116
 #lib-dt-modeling==0.0.5

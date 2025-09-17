@@ -1,0 +1,28 @@
+lane_filter_node:
+  ros__parameters:
+    predict_frequency: 10.0
+    debug: true
+    encoder_resolution: 135
+    wheel_baseline: 0.1
+    wheel_radius: 0.0318
+    lane_filter_histogram_configuration:
+      mean_d_0: 0.0
+      mean_phi_0: 0.0
+      sigma_d_0: 0.1
+      sigma_phi_0: 0.1
+      delta_d: 0.02
+      delta_phi: 0.1
+      d_max: 0.3
+      d_min: -0.3
+      phi_min: -1.5
+      phi_max: 1.5
+      cov_v: 0.5
+      linewidth_white: 0.05
+      linewidth_yellow: 0.025
+      lanewidth: 0.23
+      min_max: 0.1
+      sigma_d_mask: 0.1
+      sigma_phi_mask: 0.2
+      range_min: 0.2
+      range_est: 0.45
+      range_max: 0.6

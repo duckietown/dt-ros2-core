@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>lane_filter</name>
+  <version>1.0.0</version>
+  <description>Lane filter for estimating lane pose from line segments.</description>
+
+  <maintainer email="maintainer@example.com">Duckietown</maintainer>
+  <license>GPLv3</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>duckietown_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>dt_state_estimation</depend>
+
+  <test_depend>ament_pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

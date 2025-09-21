@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: dagu-car
+Version: 0.1.0
+Summary: ROS 2 port of Dagu car interface nodes.
+Maintainer: Duckietown
+Maintainer-email: maintainer@example.com
+License: Apache-2.0

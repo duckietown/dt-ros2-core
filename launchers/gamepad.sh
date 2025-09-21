@@ -12,8 +12,8 @@ dt-launchfile-init --quiet
 # NOTE: Use the variable DT_PROJECT_PATH to know the absolute path to your code
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
-# launching app
-dt-exec roslaunch --wait car_interface gamepad.launch \
+# launching app (ROS 2)
+dt-exec ros2 launch car_interface default.launch.py \
     veh:="${VEHICLE_NAME}"
 
 

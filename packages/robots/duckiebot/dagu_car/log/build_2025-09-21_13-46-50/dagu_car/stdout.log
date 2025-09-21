@@ -1,0 +1,43 @@
+running egg_info
+creating build/dagu_car/dagu_car.egg-info
+writing build/dagu_car/dagu_car.egg-info/PKG-INFO
+writing dependency_links to build/dagu_car/dagu_car.egg-info/dependency_links.txt
+writing entry points to build/dagu_car/dagu_car.egg-info/entry_points.txt
+writing requirements to build/dagu_car/dagu_car.egg-info/requires.txt
+writing top-level names to build/dagu_car/dagu_car.egg-info/top_level.txt
+writing manifest file 'build/dagu_car/dagu_car.egg-info/SOURCES.txt'
+reading manifest file 'build/dagu_car/dagu_car.egg-info/SOURCES.txt'
+writing manifest file 'build/dagu_car/dagu_car.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build
+creating /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib
+creating /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car
+copying dagu_car/__init__.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car
+copying dagu_car/kinematics_node.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car
+copying dagu_car/velocity_to_pose_node.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car
+copying dagu_car/car_cmd_switch_node.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car
+running install
+running install_lib
+creating /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car
+copying /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car/__init__.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car
+copying /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car/kinematics_node.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car
+copying /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car/velocity_to_pose_node.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car
+copying /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/build/lib/dagu_car/car_cmd_switch_node.py -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car
+byte-compiling /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car/__init__.py to __init__.cpython-312.pyc
+byte-compiling /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car/kinematics_node.py to kinematics_node.cpython-312.pyc
+byte-compiling /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car/velocity_to_pose_node.py to velocity_to_pose_node.cpython-312.pyc
+byte-compiling /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car/car_cmd_switch_node.py to car_cmd_switch_node.cpython-312.pyc
+running install_data
+creating /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/share/ament_index
+creating /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/share/ament_index/resource_index
+creating /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/share/ament_index/resource_index/packages
+copying resource/dagu_car -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/share/ament_index/resource_index/packages
+copying package.xml -> /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/share/dagu_car
+running install_egg_info
+Copying build/dagu_car/dagu_car.egg-info to /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/python3.12/site-packages/dagu_car-0.1.0-py3.12.egg-info
+running install_scripts
+Installing car_cmd_switch_node script to /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/dagu_car
+Installing kinematics_node script to /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/dagu_car
+Installing velocity_to_pose_node script to /home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/install/lib/dagu_car
+writing list of installed files to '/home/dan/duckietown-ros2-ws/dt-core/packages/robots/duckiebot/dagu_car/build/dagu_car/install.log'

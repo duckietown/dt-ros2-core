@@ -68,9 +68,12 @@ ENV DT_PROJECT_NAME="${PROJECT_NAME}" \
     DT_LAUNCHER="${LAUNCHER}" \
     FSM_NODE_CONTROL="${FSM_NODE_CONTROL}"
 
-# install apt dependencies
+# install apt dependencies (filter out ROS 1 packages when on ROS 2 base)
 COPY ./dependencies-apt.txt "${PROJECT_PATH}/"
-RUN dt-apt-install ${PROJECT_PATH}/dependencies-apt.txt
+RUN awk '!/^ros-noetic-/' ${PROJECT_PATH}/dependencies-apt.txt \
+    | sed 's/^libtbb2$/libtbbmalloc2/' \
+    > /tmp/dependencies-apt.ros2.txt && \
+  dt-apt-install /tmp/dependencies-apt.ros2.txt
 
 # install python3 dependencies
 ARG PIP_INDEX_URL="https://pypi.org/simple"
@@ -81,10 +84,17 @@ RUN dt-pip3-install "${PROJECT_PATH}/dependencies-py3.*"
 # copy the source code
 COPY ./packages "${PROJECT_PATH}/packages"
 
-# build packages
-RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
-  catkin build \
-    --workspace ${CATKIN_WS_DIR}/
+RUN python3 -m pip uninstall -y nose || true
+
+RUN bash -lc ". /environment.sh && \
+  colcon build \
+    --base-paths \
+      ${PROJECT_PATH}/packages/robots/duckiebot/car_interface \
+      ${PROJECT_PATH}/packages/robots/duckiebot/dagu_car \
+      ${PROJECT_PATH}/packages/robots/duckiebot/joy_mapper \
+    --build-base /code/build \
+    --install-base /code/install" && \
+  mkdir -p /opt/colcon && ln -s /code/install /opt/colcon/install
 
 # install launcher scripts
 COPY ./launchers/. "${PROJECT_LAUNCHERS_PATH}/"

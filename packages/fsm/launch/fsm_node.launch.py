@@ -42,7 +42,6 @@ def generate_launch_description() -> LaunchDescription:
 
     # Load and process YAML parameters
     parameters = load_yaml_parameters('fsm', 'config/fsm_node', 'lane_following.yaml')
-    print("PARAMETERS:", parameters)
     fsm_node = Node(
         package='fsm',
         executable='fsm_node',
@@ -50,11 +49,16 @@ def generate_launch_description() -> LaunchDescription:
         namespace=veh,
         parameters=parameters,
         output='screen',
+        remappings=[
+            # Map FSM's set_pattern calls to the LED emitter's set_pattern service  
+            ('fsm_node/set_pattern', 'set_pattern'),
+        ],
     )
 
     return LaunchDescription([
         DeclareLaunchArgument(
             'veh',
+            default_value=os.getenv('VEHICLE_NAME'),
             description='Name of vehicle. ex: megaman',
         ),
         DeclareLaunchArgument(

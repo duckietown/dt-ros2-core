@@ -4,7 +4,7 @@
   <version>0.1.0</version>
   <description>ROS 2 port of Dagu car interface nodes (kinematics, velocity_to_pose, car_cmd_switch)</description>
 
-  <maintainer email="maintainer@example.com">Duckietown</maintainer>
+  <maintainer email="daniel.thayer@duckietown.com">Duckietown</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_python</buildtool_depend>

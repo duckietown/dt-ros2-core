@@ -48,6 +48,25 @@ def generate_launch_description():
         ],
     )
 
+    # Lane controller (ROS 2)
+    lane_controller = Node(
+        package='lane_control',
+        executable='lane_controller_node',
+        name='lane_controller_node',
+        output='screen',
+        # Keep defaults; perception pipeline not yet wired in ROS2
+        parameters=[{}],
+        remappings=[
+            # Publish car_cmd under the expected source for car_cmd_switch
+            ('car_cmd', 'lane_controller_node/car_cmd'),
+            # Subscriptions below will be connected once upstream nodes are ported
+            # ('lane_pose', 'lane_filter_node/lane_pose'),
+            # ('stop_line_reading', 'stop_line_filter_node/stop_line_reading'),
+            # ('wheels_cmd', 'wheels_cmd'),
+            # ('fsm_mode', 'fsm_node/mode'),
+        ],
+    )
+
     joy_mapper = Node(
         package='joy_mapper',
         executable='joy_mapper_node',
@@ -61,6 +80,7 @@ def generate_launch_description():
         joy_mapper,
         kinematics,
         velocity_to_pose,
+        lane_controller,
         car_cmd_switch,
     ])
 

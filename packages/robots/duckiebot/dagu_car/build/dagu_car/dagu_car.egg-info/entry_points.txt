@@ -1,4 +1,0 @@
-[console_scripts]
-car_cmd_switch_node = dagu_car.car_cmd_switch_node:main
-kinematics_node = dagu_car.kinematics_node:main
-velocity_to_pose_node = dagu_car.velocity_to_pose_node:main

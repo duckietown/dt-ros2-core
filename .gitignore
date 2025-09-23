@@ -1,9 +1,9 @@
 docs/build
 *pyc
 
-**/build/
-**/install/
-**/log/
+# **/build/
+# **/install/
+# **/log/
 
 # documentation artifacts
 html/*

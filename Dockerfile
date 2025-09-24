@@ -70,10 +70,7 @@ ENV DT_PROJECT_NAME="${PROJECT_NAME}" \
 
 # install apt dependencies (filter out ROS 1 packages when on ROS 2 base)
 COPY ./dependencies-apt.txt "${PROJECT_PATH}/"
-RUN awk '!/^ros-noetic-/' ${PROJECT_PATH}/dependencies-apt.txt \
-    | sed 's/^libtbb2$/libtbbmalloc2/' \
-    > /tmp/dependencies-apt.ros2.txt && \
-  dt-apt-install /tmp/dependencies-apt.ros2.txt
+RUN dt-apt-install ${PROJECT_PATH}/dependencies-apt.txt 
 
 # install python3 dependencies
 ARG PIP_INDEX_URL="https://pypi.org/simple"

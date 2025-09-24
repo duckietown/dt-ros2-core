@@ -1,4 +1,4 @@
-name: "dt-core"
+name: "dt-ros2-core"
 maintainer:
     name: "Davide Iafrate"
     email: "davide.iafrate@duckietown.com"

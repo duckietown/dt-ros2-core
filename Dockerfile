@@ -84,17 +84,9 @@ RUN dt-pip3-install "${PROJECT_PATH}/dependencies-py3.*"
 # copy the source code
 COPY ./packages "${PROJECT_PATH}/packages"
 
-RUN python3 -m pip uninstall -y nose || true
-
-RUN bash -lc ". /environment.sh && \
-  colcon build \
-    --base-paths \
-      ${PROJECT_PATH}/packages/robots/duckiebot/car_interface \
-      ${PROJECT_PATH}/packages/robots/duckiebot/dagu_car \
-      ${PROJECT_PATH}/packages/robots/duckiebot/joy_mapper \
-    --build-base /code/build \
-    --install-base /code/install" && \
-  mkdir -p /opt/colcon && ln -s /code/install /opt/colcon/install
+# build packages
+RUN . /opt/ros/${ROS2_DISTRO}/setup.sh && \
+  dt-colcon-build ${WORKSPACE_DIR}
 
 # install launcher scripts
 COPY ./launchers/. "${PROJECT_LAUNCHERS_PATH}/"

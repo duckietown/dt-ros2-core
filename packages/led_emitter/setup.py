@@ -1,12 +1,28 @@
-## ! DO NOT MANUALLY INVOKE THIS setup.py, USE CATKIN INSTEAD
+from setuptools import find_packages, setup
 
-from distutils.core import setup
-from catkin_pkg.python_setup import generate_distutils_setup
+package_name = 'led_emitter'
 
-# fetch values from package.xml
-setup_args = generate_distutils_setup(
-    packages=["rgb_led"],
-    package_dir={"": "include"},
+setup(
+    name=package_name,
+    version='0.0.0',
+    packages=find_packages(exclude=['test']),
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', ['launch/led_emitter.launch.py']),
+        ('share/' + package_name + '/config/led_emitter_node', ['config/led_emitter_node/LED_protocol.yaml']),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='root',
+    maintainer_email='dvde.iafrate98@gmail.com',
+    description='TODO: Package description',
+    license='TODO: License declaration',
+    tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'led_emitter_node = led_emitter.led_emitter_node:main'
+        ],
+    },
 )
-
-setup(**setup_args)

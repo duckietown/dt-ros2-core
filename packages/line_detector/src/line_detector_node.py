@@ -3,128 +3,183 @@ import json
 from typing import List, Dict
 import numpy as np
 import cv2
-import rospy
+
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+
 from cv_bridge import CvBridge
-from sensor_msgs.msg import CompressedImage, Image
+from sensor_msgs.msg import CompressedImage
 from duckietown_msgs.msg import Segment as SegmentMsg, SegmentList, AntiInstagramThresholds
 from dt_computer_vision.line_detection import LineDetector, ColorRange, Detections
 from dt_computer_vision.line_detection.rendering import draw_segments, draw_maps
 from dt_computer_vision.anti_instagram import AntiInstagram
 
-from duckietown.dtros import DTROS, NodeType, TopicType, DTParam
 
-
-class LineDetectorNode(DTROS):
+class LineDetectorNode(Node):
     """
-    The ``LineDetectorNode`` is responsible for detecting the line white, yellow and red line segment in an image and
-    is used for lane localization.
+    The ``LineDetectorNode`` detects white, yellow, and red line segments in images for lane localization (ROS 2).
 
-    Upon receiving an image, this node reduces its resolution, cuts off the top part so that only the
-    road-containing part of the image is left, extracts the white, red, and yellow segments and publishes them.
-    The main functionality of this node is implemented in the :py:class:`line_detector.LineDetector` class.
+    Upon receiving an image, this node reduces its resolution, crops the top part so only the
+    road-containing portion remains, extracts white/red/yellow segments, and publishes them.
+    The main functionality is implemented by :py:class:`line_detector.LineDetector`.
 
-    The performance of this node can be very sensitive to its configuration parameters. Therefore, it also provides a
-    number of debug topics which can be used for fine-tuning these parameters. These configuration parameters can be
-    changed dynamically while the node is running via ``rosparam set`` commands.
+    The performance of this node can be very sensitive to its configuration parameters. Therefore, it also provides
+    several debug topics to fine-tune these parameters. These configuration parameters can be changed dynamically via
+    ROS 2 parameters (e.g., using ``ros2 param set``) and parameter files.
 
     Args:
-        node_name (:obj:`str`): a unique, descriptive name for the node that ROS will use
+        node_name (:obj:`str`): Unique, descriptive node name.
 
-    Configuration:
-        ~line_detector_parameters (:obj:`dict`): A dictionary with the parameters for the detector. The full list can be found in :py:class:`line_detector.LineDetector`.
-        ~colors (:obj:`dict`): A dictionary of colors and color ranges to be detected in the image. The keys (color names) should match the ones in the Segment message definition, otherwise an exception will be thrown! See the ``config`` directory in the node code for the default ranges.
-        ~img_size (:obj:`list` of ``int``): The desired downsized resolution of the image. Lower resolution would result in faster detection but lower performance, default is ``[120,160]``
-        ~top_cutoff (:obj:`int`): The number of rows to be removed from the top of the image _after_ resizing, default is 40
+    Configuration (ROS 2 parameters):
+        line_detector_parameters.* (:obj:`int|float|list`): Parameters for the detector; see :py:class:`line_detector.LineDetector`.
+        colors.* (:obj:`list[int]`): Color ranges to detect. Keys must match Segment msg color names.
+        img_size (:obj:`list[int]`): Downsized resolution [H, W]; lower is faster but less accurate. Default: [120, 160].
+        top_cutoff (:obj:`int`): Rows to remove from the top after resizing. Default: 40.
+        traffic_mode (:obj:`str`): Either "RHT" or "LHT" to mirror images for left-hand traffic. Default: "RHT".
 
-    Subscriber:
-        ~camera_node/image/compressed (:obj:`sensor_msgs.msg.CompressedImage`): The camera images
-        ~anti_instagram_node/thresholds(:obj:`duckietown_msgs.msg.AntiInstagramThresholds`): The thresholds to do color correction
+    Subscriptions:
+        image/compressed (:obj:`sensor_msgs.msg.CompressedImage`): Camera images.
+        thresholds (:obj:`duckietown_msgs.msg.AntiInstagramThresholds`): Thresholds for color correction.
 
-    Publishers:
-        ~segment_list (:obj:`duckietown_msgs.msg.SegmentList`): A list of the detected segments. Each segment is an :obj:`duckietown_msgs.msg.Segment` message
-        ~debug/segments/compressed (:obj:`sensor_msgs.msg.CompressedImage`): Debug topic with the segments drawn on the input image
-        ~debug/edges/compressed (:obj:`sensor_msgs.msg.CompressedImage`): Debug topic with the Canny edges drawn on the input image
-        ~debug/maps/compressed (:obj:`sensor_msgs.msg.CompressedImage`): Debug topic with the regions falling in each color range drawn on the input image
+    Publications:
+        segment_list (:obj:`duckietown_msgs.msg.SegmentList`): List of detected segments.
+        debug/segments/compressed (:obj:`sensor_msgs.msg.CompressedImage`): Segments drawn on the input image.
+        debug/edges/compressed (:obj:`sensor_msgs.msg.CompressedImage`): Canny edges drawn on the input image.
+        debug/maps/compressed (:obj:`sensor_msgs.msg.CompressedImage`): Regions per color range drawn on the input image.
 
     """
 
-    def __init__(self, node_name):
-        # Initialize the DTROS parent class
-        super(LineDetectorNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
+    def __init__(self, node_name: str = "line_detector_node"):
+        super().__init__(node_name, automatically_declare_parameters_from_overrides=True)
 
-        # Define parameters
-        self._line_detector_parameters = rospy.get_param("~line_detector_parameters", None)
-        self._veh = rospy.get_param("~veh")
-        self._img_size = rospy.get_param("~img_size", None)
-        self._top_cutoff = rospy.get_param("~top_cutoff", None)
-        self._colors = DTParam("~colors", None)
+        # QoS for sensor data
+        sensor_qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
 
-        self._traffic_mode = DTParam(f"/{self._veh}/behavior/traffic_mode", None)
+        # Get parameters (already declared automatically from overrides)
+        # Set defaults if parameters don't exist
+        try:
+            self._img_size = self.get_parameter("img_size").get_parameter_value().integer_array_value
+            if not self._img_size:
+                self._img_size = [120, 160]
+            else:
+                self._img_size = list(self._img_size)
+        except:
+            self.declare_parameter("img_size", [120, 160])
+            self._img_size = [120, 160]
+            
+        try:
+            self._top_cutoff = int(self.get_parameter("top_cutoff").value)
+        except:
+            self.declare_parameter("top_cutoff", 40)
+            self._top_cutoff = 40
+            
+        try:
+            self._traffic_mode = str(self.get_parameter("traffic_mode").value)
+        except:
+            self.declare_parameter("traffic_mode", "RHT")
+            self._traffic_mode = "RHT"
 
         self.bridge = CvBridge()
 
-        # The thresholds to be used for AntiInstagram color correction
+        # AntiInstagram thresholds
         self.ai_thresholds_received = False
         self.anti_instagram_thresholds = dict()
         self.ai = AntiInstagram()
 
-        # This holds the colormaps for the debug/ranges images after they are computed once
+        # Cache for debug/ranges image color maps
         self.colormaps = dict()
 
-        # Create a new LineDetector object with the parameters from the Parameter Server / config file
-        self.detector = LineDetector(**self._line_detector_parameters)
+        # Read detector parameters under prefix 'line_detector_parameters'
+        ldp = self.get_parameters_by_prefix("line_detector_parameters")
+        ldp_clean = {k: v.value for k, v in ldp.items()}
+        self.detector = LineDetector(**ldp_clean)
 
-        # Update the color ranges objects
+        # Default color ranges from config file
+        self.default_colors = {
+            "RED": {
+                "low_1": [0, 140, 100],
+                "high_1": [15, 255, 255],
+                "low_2": [165, 140, 100],
+                "high_2": [180, 255, 255]
+            },
+            "WHITE": {
+                "low": [0, 0, 150],
+                "high": [180, 100, 255]
+            },
+            "YELLOW": {
+                "low": [25, 140, 100],
+                "high": [45, 255, 255]
+            }
+        }
+
+        # Initialize color ranges from parameters under prefix 'colors'
         self.color_ranges: Dict[str, ColorRange] = {}
         self.on_colors_range_change()
-        self._colors.register_update_callback(self.on_colors_range_change)
+
+        # Register parameter update callback for dynamic updates
+        self.add_on_set_parameters_callback(self._on_parameters_changed)
 
         # Publishers
-        self.pub_lines = rospy.Publisher(
-            "~segment_list", SegmentList, queue_size=1, dt_topic_type=TopicType.PERCEPTION
-        )
-        self.pub_d_segments = rospy.Publisher(
-            "~debug/segments/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
-        )
-        self.pub_d_edges = rospy.Publisher(
-            "~debug/edges/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
-        )
-        self.pub_d_maps = rospy.Publisher(
-            "~debug/maps/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG
-        )
+        self.pub_lines = self.create_publisher(SegmentList, "segment_list", 10)
+        self.pub_d_segments = self.create_publisher(CompressedImage, "debug/segments/compressed", sensor_qos)
+        self.pub_d_edges = self.create_publisher(CompressedImage, "debug/edges/compressed", sensor_qos)
+        self.pub_d_maps = self.create_publisher(CompressedImage, "debug/maps/compressed", sensor_qos)
 
         # Subscribers
-        self.sub_image = rospy.Subscriber(
-            "~image/compressed", CompressedImage, self.image_cb, buff_size=10000000, queue_size=1
+        self.sub_image = self.create_subscription(
+            CompressedImage, "image/compressed", self.image_cb, sensor_qos
         )
-
-        self.sub_thresholds = rospy.Subscriber(
-            "~thresholds", AntiInstagramThresholds, self.thresholds_cb, queue_size=1
+        self.sub_thresholds = self.create_subscription(
+            AntiInstagramThresholds, "thresholds", self.thresholds_cb, 10
         )
 
         # Check if CUDA is available
-        # LP: I think for this to work we need the base image to have CUDA
-        #     which it currently doesn't
         if cv2.cuda.getCudaEnabledDeviceCount() > 0:
-            self.loginfo("Using CUDA GPU for line detection.")
+            self.get_logger().info("Using CUDA GPU for line detection.")
             self.cuda_enabled = True
         else:
-            self.loginfo("Using the CPU for line detection.")
+            self.get_logger().info("Using the CPU for line detection.")
             self.cuda_enabled = False
 
     def on_colors_range_change(self):
-        self.color_ranges = {
-            color: ColorRange.fromDict(d)
-            for color, d in list(self._colors.value.items())
-        }
-        self.loginfo(f"Color range changed to {json.dumps(self._colors.value)}")
+        # Read parameters under 'colors.' prefix and rebuild the dict structure
+        params = self.get_parameters_by_prefix("colors")
+        # Build color dict as expected by ColorRange.fromDict
+        colors: Dict[str, Dict] = {}
+        for full_key, param in params.items():
+            # full_key examples: 'RED.low_1', 'WHITE.low', 'YELLOW.high'
+            parts = full_key.split(".")
+            if len(parts) != 2:
+                continue
+            color, key = parts
+            if color not in colors:
+                colors[color] = {}
+            colors[color][key] = param.value
 
-    def thresholds_cb(self, thresh_msg):
+        # If no color parameters found, use defaults
+        if not colors:
+            colors = self.default_colors
+            self.get_logger().info("No color parameters found, using default values")
+
+        self.color_ranges = {
+            color: ColorRange.fromDict(d) for color, d in colors.items()
+        }
+        try:
+            self.get_logger().info(f"Color range changed to {json.dumps(colors)}")
+        except Exception:
+            self.get_logger().info("Color range parameters updated.")
+
+    def thresholds_cb(self, thresh_msg: AntiInstagramThresholds):
         self.anti_instagram_thresholds["lower"] = thresh_msg.low
         self.anti_instagram_thresholds["higher"] = thresh_msg.high
         self.ai_thresholds_received = True
 
-    def image_cb(self, image_msg):
+    def image_cb(self, image_msg: CompressedImage):
         """
         Processes the incoming image messages.
 
@@ -147,7 +202,7 @@ class LineDetectorNode(DTROS):
         try:
             obtained_image = self.bridge.compressed_imgmsg_to_cv2(image_msg)
         except ValueError as e:
-            self.logerr(f"Could not decode image: {e}")
+            self.get_logger().error(f"Could not decode image: {e}")
             return
         
         # Perform color correction
@@ -176,7 +231,7 @@ class LineDetectorNode(DTROS):
         gpu_image = gpu_image[self._top_cutoff :, :, :]
 
         # mirror the gpu_image if left-hand traffic mode is set
-        if self._traffic_mode.value == "LHT":
+        if self._traffic_mode == "LHT":
             gpu_image = np.fliplr(gpu_image)
 
         color_order = ["YELLOW", "WHITE", "RED"]
@@ -236,7 +291,7 @@ class LineDetectorNode(DTROS):
             image = gpu_image
 
         # If there are any subscribers to the debug topics, generate a debug image and publish it
-        if self.pub_d_segments.get_num_connections() > 0:
+        if self.pub_d_segments.get_subscription_count() > 0:
             debug_img = draw_segments(image,
                                       {
                                         self.color_ranges["YELLOW"]: color_detections[0],
@@ -246,36 +301,35 @@ class LineDetectorNode(DTROS):
                                     )
 
             # mirror the image if left-hand traffic mode is set
-            if self._traffic_mode.value == "LHT":
+            if self._traffic_mode == "LHT":
                 debug_img = np.fliplr(debug_img)
             debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(debug_img)
             debug_image_msg.header = image_msg.header
             self.pub_d_segments.publish(debug_image_msg)
 
-        if self.pub_d_edges.get_num_connections() > 0:
+        if self.pub_d_edges.get_subscription_count() > 0:
             canny_edges = self.detector.find_edges(image,
                                                    self.detector.canny_thresholds[0],
                                                    self.detector.canny_thresholds[1],
                                                    self.detector.canny_aperture_size
                                                    )
             # mirror the image if left-hand traffic mode is set
-            if self._traffic_mode.value == "LHT":
+            if self._traffic_mode == "LHT":
                 canny_edges = np.fliplr(canny_edges)
             debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(canny_edges)
             debug_image_msg.header = image_msg.header
             self.pub_d_edges.publish(debug_image_msg)
 
-        if self.pub_d_maps.get_num_connections() > 0:
-#            colorrange_detections = {self.color_ranges[c]: det for c, det in list(detections.items())}
+        if self.pub_d_maps.get_subscription_count() > 0:
             debug_img = draw_maps(image,
                                   {
                                       self.color_ranges["YELLOW"]: color_detections[0],
                                       self.color_ranges["WHITE"]: color_detections[1],
-                                      self.color_ranges["RED"]: color_detections[2]
+                                      self.color_ranges["RED"]: color_detections[2],
                                   }
                                   )
             # mirror the image if left-hand traffic mode is set
-            if self._traffic_mode.value == "LHT":
+            if self._traffic_mode == "LHT":
                 debug_img = np.fliplr(debug_img)
             debug_image_msg = self.bridge.cv2_to_compressed_imgmsg(debug_img)
             debug_image_msg.header = image_msg.header
@@ -395,8 +449,42 @@ class LineDetectorNode(DTROS):
         return im
 
 
+    def _on_parameters_changed(self, params):
+        # Update cached parameters on change; accept all valid updates
+        updated = False
+        for p in params:
+            if p.name.startswith("colors."):
+                updated = True
+            elif p.name == "img_size":
+                try:
+                    self._img_size = list(p.value)
+                except Exception:
+                    pass
+            elif p.name == "top_cutoff":
+                try:
+                    self._top_cutoff = int(p.value)
+                except Exception:
+                    pass
+            elif p.name == "traffic_mode":
+                try:
+                    self._traffic_mode = str(p.value)
+                except Exception:
+                    pass
+        if updated:
+            self.on_colors_range_change()
+        from rcl_interfaces.msg import SetParametersResult
+        return SetParametersResult(successful=True)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = LineDetectorNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
 if __name__ == "__main__":
-    # Initialize the node
-    line_detector_node = LineDetectorNode(node_name="line_detector_node")
-    # Keep it spinning to keep the node alive
-    rospy.spin()
+    main()

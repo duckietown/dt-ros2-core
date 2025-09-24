@@ -1,19 +1,6 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(lane_filter)
 
-find_package(catkin REQUIRED COMPONENTS
-  rospy
-  duckietown_msgs # Every duckietown packages should use this.
-  cv_bridge
-  tf
-)
+find_package(ament_cmake REQUIRED)
 
-catkin_python_setup()
-
-
-catkin_package()
-
-
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-)
+ament_package()

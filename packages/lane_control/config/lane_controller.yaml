@@ -1,0 +1,26 @@
+lane_controller:
+  ros__parameters:
+    # Nominal forward velocity (m/s)
+    v_bar: 0.25
+    
+    # Proportional gain for lateral deviation (d)
+    k_d: 3.0
+    
+    # Proportional gain for heading error (phi/theta)
+    k_theta: 8.0
+    
+    # Maximum allowed lateral deviation (m)
+    d_thres: 0.3
+    
+    # Minimum heading error threshold (rad)
+    theta_thres_min: -0.6
+    
+    # Maximum heading error threshold (rad)
+    theta_thres_max: 0.6
+    
+    # Goal lateral offset from lane center (m)
+    d_offset: 0.0
+    
+    # Feedforward omega term (rad/s)
+    omega_ff: 0.0
+

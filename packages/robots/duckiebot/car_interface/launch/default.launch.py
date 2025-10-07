@@ -2,6 +2,8 @@ from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument, GroupAction
 from launch_ros.actions import Node, PushRosNamespace
+from ament_index_python.packages import get_package_share_directory
+import os
 
 
 def generate_launch_description():
@@ -10,6 +12,10 @@ def generate_launch_description():
     declare_veh = DeclareLaunchArgument(
         'veh', default_value='duckiebot', description='Vehicle name namespace'
     )
+    
+    # Get path to lane controller config file
+    lane_control_share = get_package_share_directory('lane_control')
+    lane_controller_config = os.path.join(lane_control_share, 'config', 'lane_controller.yaml')
 
     # Placeholder for ROS 2 executables; topic names/remaps mirror ROS 1 layout
     car_cmd_switch = Node(
@@ -51,14 +57,13 @@ def generate_launch_description():
     # Lane controller (ROS 2)
     lane_controller = Node(
         package='lane_control',
-        executable='lane_controller_node',
-        name='lane_controller_node',
+        executable='lane_controller',
+        name='lane_controller',
         output='screen',
-        # Keep defaults; perception pipeline not yet wired in ROS2
-        parameters=[{}],
+        parameters=[lane_controller_config],  # Load params from YAML file
         remappings=[
             # Publish car_cmd under the expected source for car_cmd_switch
-            ('car_cmd', 'lane_controller_node/car_cmd'),
+            ('car_cmd', 'lane_controller/car_cmd'),
             # Subscriptions below will be connected once upstream nodes are ported
             # ('lane_pose', 'lane_filter_node/lane_pose'),
             # ('stop_line_reading', 'stop_line_filter_node/stop_line_reading'),
@@ -69,10 +74,15 @@ def generate_launch_description():
 
     joy_mapper = Node(
         package='joy_mapper',
-        executable='joy_mapper_node',
+        executable='joy_mapper',
         name='joy_mapper',
         output='screen',
         parameters=[{}],
+        remappings=[
+            ('car_cmd', 'joy_mapper/car_cmd'),
+            ('emergency_stop', 'joy_mapper/emergency_stop'),
+            ('joystick_override', 'joy_mapper/joystick_override'),
+        ],
     )
 
     group = GroupAction([

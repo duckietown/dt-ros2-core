@@ -24,11 +24,11 @@ class CarCmdSwitchNode(Node):
         self.mode_topic = str(self.get_parameter('mode_topic').value)
 
         self.source_topics = {
-            'coordination': 'coordinator_node/car_cmd',
-            'intersection': 'unicorn_intersection_node/car_cmd',
-            'joystick': 'joy_mapper_node/car_cmd',
-            'lane': 'lane_controller_node/car_cmd',
-            'stop': 'simple_stop_controller_node/car_cmd',
+            'coordination': 'coordinator/car_cmd',
+            'intersection': 'unicorn_intersection/car_cmd',
+            'joystick': 'joy_mapper/car_cmd',
+            'lane': 'lane_controller/car_cmd',
+            'stop': 'simple_stop_controller/car_cmd',
         }
 
         self.current_src_name = 'joystick'

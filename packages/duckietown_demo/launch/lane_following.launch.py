@@ -95,12 +95,11 @@ def generate_launch_description() -> LaunchDescription:
         package="line_detector",
         executable="line_detector_node.py",
         name="line_detector_node",
-        namespace=veh,
         output="screen",
         parameters=[line_detector_params],
         remappings=[
             # Camera image comes from the camera node
-            ("image/compressed", "camera_node/image/compressed"),
+            # no remapping needed - camera publishes to /<veh>/image/compressed,
         ],
     )
 
@@ -122,14 +121,13 @@ def generate_launch_description() -> LaunchDescription:
         package="ground_projection",
         executable="ground_projection_node",
         name="ground_projection_node",
-        namespace=veh,
         output="screen",
         parameters=ground_projection_params,
         remappings=[
             # Receive segments from the line detector
-            ("lineseglist_in", "line_detector_node/segment_list"),
+            ("lineseglist_in", "segment_list"),
             # Camera info from the camera node
-            ("camera_info", "camera_node/camera_info"),
+            # no remapping needed - camera publishes to /<veh>/camera_info,
         ],
     )
 
@@ -152,14 +150,13 @@ def generate_launch_description() -> LaunchDescription:
         package="lane_filter",
         executable="lane_filter_node",
         name="lane_filter_node",
-        namespace=veh,
         output="screen",
         parameters=[lane_filter_params],
         remappings=[
             # Receive ground-projected segments
-            ("segment_list", "ground_projection_node/lineseglist_out"),
+            ("segment_list", "lineseglist_out"),
             # Receive car commands for motion prediction
-            ("car_cmd", "lane_controller_node/car_cmd"),
+            # car_cmd resolves to /<veh>/car_cmd which matches,
         ],
     )
 
@@ -173,11 +170,10 @@ def generate_launch_description() -> LaunchDescription:
         package="lane_control",
         executable="lane_controller_node",
         name="lane_controller_node",
-        namespace=veh,
         output="screen",
         remappings=[
             # Receive lane pose from lane filter
-            ("lane_pose", "lane_filter_node/lane_pose"),
+            # lane_pose resolves to /<veh>/lane_pose which matches,
         ],
     )
 
@@ -193,7 +189,6 @@ def generate_launch_description() -> LaunchDescription:
         package="fsm",
         executable="fsm_node",
         name="fsm_node",
-        namespace=veh,
         output="screen",
         parameters=fsm_parameters,
         remappings=[
@@ -202,7 +197,7 @@ def generate_launch_description() -> LaunchDescription:
             # Receive joystick mode-override commands
             ("mode_override", "joy_mapper_node/mode_override"),
             # Receive car commands from the lane controller
-            ("car_cmd_in", "lane_controller_node/car_cmd"),
+            ("car_cmd_in", "car_cmd"),
         ],
     )
 
@@ -224,7 +219,6 @@ def generate_launch_description() -> LaunchDescription:
         package="led_emitter",
         executable="led_emitter_node",
         name="led_emitter_node",
-        namespace=veh,
         output="screen",
         parameters=[led_emitter_params],
     )

@@ -1,7 +1,7 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
 
 # duckiedrone nodes
-filterpy
+filterpy==1.4.5
 simple-pid<=2.0.1
 numpy-quaternion==2023.0.4
 
@@ -9,7 +9,7 @@ numpy-quaternion==2023.0.4
 
 duckietown-utils-ente==7.0.0
 
-git+https://github.com/duckietown/lib-dt-computer-vision.git@ente
+lib-dt-computer-vision==1.0.1
 lib-dt-state-estimation==0.0.10
 
 #### TODO: fix numpy version in lib-dt-modeling #116

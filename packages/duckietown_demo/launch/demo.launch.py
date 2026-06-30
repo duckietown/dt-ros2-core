@@ -26,7 +26,7 @@ def generate_launch_description():
             description='Vehicle namespace (e.g., megaman)'
         ),
         GroupAction([
-            # PushRosNamespace(veh),
+            PushRosNamespace(veh),
 
             # Line detector node
             Node(
@@ -35,8 +35,7 @@ def generate_launch_description():
                 name='line_detector_node',
                 output='screen',
                 parameters=params,
-                # Common Duckietown camera naming is camera_node/image/compressed; if needed, remap here.
-                # remappings=[('image/compressed', 'camera_node/image/compressed')],
+                remappings=[('image/compressed', 'camera_node/image/compressed')],
             ),
 
             # Ground projection node
@@ -48,8 +47,7 @@ def generate_launch_description():
                 # Remap the GP subscriber to the line detector output
                 remappings=[
                     ('lineseglist_in', 'segment_list'),
-                    # If your camera_info comes from camera_node, enable the next line
-                    # ('camera_info', 'camera_node/camera_info'),
+                    ('camera_info', 'camera_node/camera_info'),
                 ],
             ),
 

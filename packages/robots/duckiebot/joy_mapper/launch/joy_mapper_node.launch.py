@@ -17,8 +17,13 @@ def generate_launch_description():
         Node(
             package='joy_mapper',
             executable='joy_mapper',
-            name='joy_mapper',
+            name='joy_mapper_node',
             parameters=[config_file],
             output='screen',
+            remappings=[
+                ('car_cmd', 'joy_mapper_node/car_cmd'),
+                ('emergency_stop', 'wheels_driver_node/emergency_stop'),
+                ('joystick_override', 'joy_mapper_node/joystick_override'),
+            ],
         ),
     ])

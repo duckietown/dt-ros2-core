@@ -26,8 +26,8 @@ class CarCmdSwitchNode(Node):
         self.source_topics = {
             'coordination': 'coordinator/car_cmd',
             'intersection': 'unicorn_intersection/car_cmd',
-            'joystick': 'joy_mapper/car_cmd',
-            'lane': 'lane_controller/car_cmd',
+            'joystick': 'joy_mapper_node/car_cmd',
+            'lane': 'lane_controller_node/car_cmd',
             'stop': 'simple_stop_controller/car_cmd',
         }
 

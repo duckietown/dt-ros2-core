@@ -25,6 +25,9 @@ def generate_launch_description():
         namespace=veh,
         output='screen',
         parameters=[params],
+        remappings=[
+            ('led_pattern', 'led_driver_node/led_pattern'),
+        ],
     )
 
     return LaunchDescription([

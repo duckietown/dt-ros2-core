@@ -25,7 +25,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{}],
         remappings=[
-            ('cmd', 'car_cmd'),
+            ('cmd', 'car_cmd_switch_node/cmd'),
         ],
     )
 
@@ -36,10 +36,10 @@ def generate_launch_description():
         output='screen',
         parameters=[{}],
         remappings=[
-            ('car_cmd', 'car_cmd'),
-            ('wheels_cmd', 'wheels_cmd'),
-            ('wheels_cmd_executed', 'wheels_cmd_executed'),
-            ('velocity', 'kinematics/velocity')
+            ('car_cmd', 'car_cmd_switch_node/cmd'),
+            ('wheels_cmd', 'wheels_driver_node/wheels_cmd'),
+            ('wheels_cmd_executed', 'wheels_driver_node/wheels_cmd_executed'),
+            ('velocity', 'kinematics_node/velocity')
         ],
     )
 
@@ -50,7 +50,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{}],
         remappings=[
-            ('velocity', 'kinematics/velocity'),
+            ('velocity', 'kinematics_node/velocity'),
         ],
     )
 
@@ -58,12 +58,12 @@ def generate_launch_description():
     lane_controller = Node(
         package='lane_control',
         executable='lane_controller',
-        name='lane_controller',
+        name='lane_controller_node',
         output='screen',
         parameters=[lane_controller_config],  # Load params from YAML file
         remappings=[
-            # Publish car_cmd under the expected source for car_cmd_switch
-            ('car_cmd', 'lane_controller/car_cmd'),
+            ('car_cmd', 'lane_controller_node/car_cmd'),
+            ('wheels_cmd_executed', 'wheels_driver_node/wheels_cmd_executed'),
             # Subscriptions below will be connected once upstream nodes are ported
             # ('lane_pose', 'lane_filter_node/lane_pose'),
             # ('stop_line_reading', 'stop_line_filter_node/stop_line_reading'),
@@ -75,13 +75,13 @@ def generate_launch_description():
     joy_mapper = Node(
         package='joy_mapper',
         executable='joy_mapper',
-        name='joy_mapper',
+        name='joy_mapper_node',
         output='screen',
         parameters=[{}],
         remappings=[
-            ('car_cmd', 'joy_mapper/car_cmd'),
-            ('emergency_stop', 'joy_mapper/emergency_stop'),
-            ('joystick_override', 'joy_mapper/joystick_override'),
+            ('car_cmd', 'joy_mapper_node/car_cmd'),
+            ('emergency_stop', 'wheels_driver_node/emergency_stop'),
+            ('joystick_override', 'joy_mapper_node/joystick_override'),
         ],
     )
 

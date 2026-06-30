@@ -20,6 +20,9 @@ def generate_launch_description():
                 executable="ground_projection_node",
                 name="ground_projection_node",
                 output="screen",
+                remappings=[
+                    ("camera_info", "camera_node/camera_info"),
+                ],
             ),
         ]),
     ])

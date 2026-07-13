@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>duckiedrone_computer_vision</name>
+  <version>0.0.1</version>
+  <description>ROS2 launch composition for Duckiedrone computer vision.</description>
+
+  <maintainer email="info@duckietown.com">Duckietown</maintainer>
+  <license>Duckietown License</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>ground_projection</exec_depend>
+  <exec_depend>optical_flow</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

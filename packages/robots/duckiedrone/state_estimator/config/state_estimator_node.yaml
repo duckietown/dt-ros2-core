@@ -1,0 +1,17 @@
+/**:
+  ros__parameters:
+    primary: "ema"
+    others:
+      - "ema"
+      - "mocap"
+    ir_throttled: false
+    imu_throttled: false
+    optical_flow_throttled: false
+    camera_pose_throttled: false
+    sdim: 1
+    student_ukf: false
+    ir_var: 0.0
+    state_rate: 30.0
+    ema_alpha_pose: 0.2
+    ema_alpha_twist: 0.1
+    ema_alpha_range: 0.1

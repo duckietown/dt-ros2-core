@@ -4,6 +4,6 @@ This part of the book details the nodes used by the Duckiedrone. The nodes are s
 
 | Node                | Relative path                                            | Description                                                      |
 |---------------------|----------------------------------------------------------|------------------------------------------------------------------|
-| PID Controller Node | robot/dt-core/packages/robots/duckiedrone/pid_controller | PID controller for controlling height and x-y velocity/position. |
+| PID Controller Node | robot/dt-ros2-core/packages/robots/duckiedrone/pid_controller | PID controller for controlling height and x-y velocity/position. |
 |                     |                                                          |                                                                  |
 |                     |                                                          |                                                                  

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>optical_flow</name>
+  <version>0.0.1</version>
+  <description>ROS2 optical flow processing for Duckiedrone.</description>
+
+  <maintainer email="info@duckietown.com">Duckietown</maintainer>
+  <license>Duckietown License</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>duckietown_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>opencv_apps</depend>
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -8,15 +8,15 @@
             "name": "Optical Flow Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/optical_flow/launch/optical_flow_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/optical_flow/launch/optical_flow_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },
         {
             "name": "Ground Projection Node",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/ground_projection/launch/ground_projection_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/ground_projection/launch/ground_projection.launch.py",
             "launch": [
                 "rviz",
                 "gz",
@@ -32,36 +32,36 @@
             "name": "State Estimator Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/state_estimator/launch/state_estimator_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/state_estimator/launch/state_estimator_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },
         {
             "name": "PID Controller Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/pid_controller/launch/pid_controller_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/pid_controller/launch/pid_controller_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },
         {
             "name": "Simple State Estimator Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/state_estimator/launch/simple_state_estimator_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/state_estimator/launch/simple_state_estimator_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },
         {
             "name": "Rigid Transform Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/rigid_transform/launch/rigid_transfrom_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/rigid_transform/launch/rigid_transform_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ],
             "env": {"DEBUG": "1"}
         },
@@ -69,36 +69,36 @@
             "name": "DD24 Velocity Estimation Stack",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/duckiedrone_computer_vision/launch/computer_vision.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/duckiedrone_computer_vision/launch/computer_vision.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },
         {
             "name": "Fly Mux Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/fly_commands_mux/launch/fly_commands_mux_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/fly_commands_mux/launch/fly_commands_mux_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },
         {
             "name": "Localization Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/localization/launch/localization_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/localization/launch/localization_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },        
         {
             "name": "SLAM Node",
             "type": "ros",
             "request": "launch",
-            "target": "/code/src/dt-core/packages/robots/duckiedrone/slam/launch/slam_node.launch",
+            "target": "/code/src/dt-ros2-core/packages/robots/duckiedrone/slam/launch/slam_node.launch.py",
             "arguments": [
-                "veh:=${env:VEHICLE_NAME}",
+                "robot_name:=${env:VEHICLE_NAME}",
             ]
         },
     ]

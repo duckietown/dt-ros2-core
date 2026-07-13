@@ -13,8 +13,8 @@ dt-launchfile-init
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-dt-exec-BG roslaunch --wait altitude altitude_node.launch \
-    veh:="${VEHICLE_NAME}"
+dt-exec-BG ros2 launch altitude altitude_node.launch.py \
+    robot_name:="${VEHICLE_NAME}"
 
 
 # ----------------------------------------------------------------------------

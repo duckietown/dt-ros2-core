@@ -13,8 +13,8 @@ dt-launchfile-init
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-dt-exec roslaunch --wait duckiedrone_computer_vision computer_vision.launch \
-    veh:="${VEHICLE_NAME}"
+dt-exec ros2 launch duckiedrone_computer_vision computer_vision.launch.py \
+    robot_name:="${VEHICLE_NAME}"
 
 
 # ----------------------------------------------------------------------------

@@ -1,0 +1,8 @@
+/**:
+  ros__parameters:
+    publish_frequency: 50.0
+    roll_override: true
+    pitch_override: true
+    yaw_override: true
+    throttle_override: true
+    command_ttl: 0.5

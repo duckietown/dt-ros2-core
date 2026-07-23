@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>altitude</name>
+  <version>0.0.1</version>
+  <description>ROS2 altitude package for Duckiedrone.</description>
+
+  <maintainer email="info@duckietown.com">Duckietown</maintainer>
+  <license>Duckietown License</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -13,8 +13,8 @@ dt-launchfile-init
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-dt-exec roslaunch --wait optical_flow optical_flow_node.launch \
-    veh:="${VEHICLE_NAME}"
+dt-exec ros2 launch optical_flow optical_flow_node.launch.py \
+    robot_name:="${VEHICLE_NAME}"
 
 
 # ----------------------------------------------------------------------------

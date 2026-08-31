@@ -13,8 +13,8 @@ dt-launchfile-init --quiet
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-dt-exec roslaunch --wait drone_interface default.launch \
-    veh:="${VEHICLE_NAME}"
+dt-exec ros2 launch drone_interface default.launch.py \
+    robot_name:="${VEHICLE_NAME}"
 
 
 # ----------------------------------------------------------------------------

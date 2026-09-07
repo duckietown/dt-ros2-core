@@ -31,18 +31,19 @@ class GroundProjectionNode(Node):
     Args:
         node_name (str): Unique name for this ROS 2 node.
 
-    Subscriptions (relative to node namespace):
+    Subscriptions:
         camera_info (sensor_msgs.msg.CameraInfo): Camera intrinsics used for rectification.
-        lineseglist_in (duckietown_msgs.msg.SegmentList): Line segments in pixel space (unrectified input).
+        ~/lineseglist_in (duckietown_msgs.msg.SegmentList): Line segments in pixel space
+            (unrectified input).
 
-    Publications (relative to node namespace):
-        lineseglist_out (duckietown_msgs.msg.SegmentList): Segments projected on the ground plane
+    Publications (private topics):
+        ~/lineseglist_out (duckietown_msgs.msg.SegmentList): Segments projected on the ground plane
             relative to the robot.
-        debug/ground_projection_image/compressed (sensor_msgs.msg.CompressedImage): Debug image showing
-            the robot relative to projected segments (checks extrinsic accuracy).
-        debug/projected_image/rectified/compressed (sensor_msgs.msg.CompressedImage): Rectified image
+        ~/debug/ground_projection_image/compressed (sensor_msgs.msg.CompressedImage): Debug image
+            showing the robot relative to projected segments (checks extrinsic accuracy).
+        ~/debug/projected_image/rectified/compressed (sensor_msgs.msg.CompressedImage): Rectified image
             (checks rectification accuracy).
-        debug/projected_image/compressed (sensor_msgs.msg.CompressedImage): Image after homography
+        ~/debug/projected_image/compressed (sensor_msgs.msg.CompressedImage): Image after homography
             (checks homography accuracy).
 
     """
@@ -61,28 +62,28 @@ class GroundProjectionNode(Node):
         self._first_processing_done = False
         self.camera_info_received = False
 
-        # subscribers (relative names; resolve under node namespace)
+        # camera_info is explicitly remapped in the launch file; remaining I/O is private.
         self.sub_camera_info = self.create_subscription(
             CameraInfo, "camera_info", self.cb_camera_info, 10,
         )
         self.sub_lineseglist_ = self.create_subscription(
-            SegmentList, "lineseglist_in", self.lineseglist_cb, 10,
+            SegmentList, "~/lineseglist_in", self.lineseglist_cb, 10,
         )
 
         # publishers
         self.pub_lineseglist = self.create_publisher(
-            SegmentList, "lineseglist_out", 10,
+            SegmentList, "~/lineseglist_out", 10,
         )
         self.pub_debug_road_view_img = self.create_publisher(
-            CompressedImage, "debug/ground_projection_image/compressed", 10,
+            CompressedImage, "~/debug/ground_projection_image/compressed", 10,
         )
 
         self.pub_debug_rectified_img = self.create_publisher(
-            CompressedImage, "debug/projected_image/rectified/compressed", 10,
+            CompressedImage, "~/debug/projected_image/rectified/compressed", 10,
         )
 
         self.pub_debug_projected_img = self.create_publisher(
-            CompressedImage, "debug/projected_image/compressed", 10,
+            CompressedImage, "~/debug/projected_image/compressed", 10,
         )
 
         self.bridge = CvBridge()

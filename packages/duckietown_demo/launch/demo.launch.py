@@ -46,7 +46,7 @@ def generate_launch_description():
                 output='screen',
                 # Remap the GP subscriber to the line detector output
                 remappings=[
-                    ('lineseglist_in', 'segment_list'),
+                    ('~/lineseglist_in', 'segment_list'),
                     ('camera_info', 'camera_node/camera_info'),
                 ],
             ),
@@ -59,7 +59,7 @@ def generate_launch_description():
                 output='screen',
                 parameters=lf_params,
                 remappings=[
-                    ('segment_list', 'lineseglist_out'),
+                    ('segment_list', 'ground_projection_node/lineseglist_out'),
                 ],
             ),
         ]),

@@ -13,8 +13,8 @@ dt-launchfile-init
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-dt-exec roslaunch --wait pid_controller pid_controller_node.launch \
-    veh:="${VEHICLE_NAME}"
+dt-exec ros2 launch pid_controller pid_controller_node.launch.py \
+    robot_name:="${VEHICLE_NAME}"
 
 
 # ----------------------------------------------------------------------------

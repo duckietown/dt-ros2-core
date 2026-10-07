@@ -106,8 +106,9 @@ class GroundProjectionNode(Node):
                 width=msg.width,
                 height=msg.height,
                 K=np.reshape(msg.k, (3, 3)),
-                D=np.reshape(msg.d, (5,)),
+                D=np.array(msg.d),
                 P=np.reshape(msg.p, (3, 4)),
+                distortion_model=msg.distortion_model or "plumb_bob",
             )
 
             self.homography = self.load_extrinsics()

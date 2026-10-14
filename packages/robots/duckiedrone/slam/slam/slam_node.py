@@ -6,7 +6,7 @@ from math import cos, sin
 import cv2
 import numpy as np
 import rclpy
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
@@ -71,7 +71,7 @@ class SLAMNode(Node):
                 msg,
                 desired_encoding="passthrough",
             )
-        except cv2.error as error:
+        except (CvBridgeError, cv2.error) as error:
             self.get_logger().error(f"Failed to convert image: {error}")
             return
 

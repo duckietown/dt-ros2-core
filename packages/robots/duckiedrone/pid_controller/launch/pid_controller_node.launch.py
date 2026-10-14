@@ -43,10 +43,10 @@ def generate_launch_description() -> LaunchDescription:
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
         ],
         remappings=[
-            ("~/mode", "flight_controller_node/mode/current"),
-            ("~/commands", "mavros/setpoint_raw/attitude"),
+            ("~/mode", "/mavros/state"),
+            ("~/commands", "/mavros/setpoint_raw/attitude"),
             ("~/state", "state_estimator_node/state"),
-            ("~/set_mode", "flight_controller_node/set_mode"),
+            ("~/set_mode", "/mavros/set_mode"),
         ],
         arguments=[
             "--ros-args",
@@ -55,8 +55,6 @@ def generate_launch_description() -> LaunchDescription:
         ],
         output="screen",
         emulate_tty=True,
-        respawn=True,
-        respawn_delay=2.0,
     )
 
     return LaunchDescription([*args, node])

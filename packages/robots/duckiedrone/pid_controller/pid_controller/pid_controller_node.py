@@ -16,6 +16,7 @@ from nav_msgs.msg import Odometry
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.task import Future
 from std_msgs.msg import Bool, Empty, Float32
 from std_srvs.srv import SetBool
 
@@ -164,18 +165,14 @@ class PIDControllerNode(Node):
         request.base_mode = 0
         request.custom_mode = mode
         future = self.set_mode_client.call_async(request)
-        start = time.monotonic()
-        while rclpy.ok() and not future.done() and time.monotonic() - start < 5.0:
-            time.sleep(0.05)
-        if not future.done():
-            self.get_logger().warning("Timed out calling the set mode service.")
-            return
+        future.add_done_callback(lambda done: self._set_mode_done(mode, done))
 
+    def _set_mode_done(self, mode: str, future: Future) -> None:
         response = future.result()
         if response is not None and response.mode_sent:
-            self.get_logger().info("Successfully called the set mode service")
+            self.get_logger().info(f"Set mode {mode} sent")
         else:
-            self.get_logger().warning("Failed to call the set mode service")
+            self.get_logger().warning(f"Set mode {mode} was not sent")
 
     def current_state_callback(self, state: Odometry) -> None:
         self.previous_state = self.current_state

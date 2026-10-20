@@ -8,6 +8,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from cv_bridge import CvBridge
 
+from dt_robot_utils import get_robot_params, get_calibration_file
 from dt_state_estimation.lane_filter import LaneFilterHistogram
 from dt_state_estimation.lane_filter.types import Segment, SegmentColor, SegmentPoint
 from dt_state_estimation.lane_filter.rendering import plot_d_phi
@@ -48,9 +49,13 @@ class LaneFilterNode(Node):
         self._debug = self.declare_parameter('debug', True).value
         self._predict_freq = float(self.declare_parameter('predict_frequency', 30.0).value)
         filter_config = self.declare_parameter('lane_filter_histogram_configuration', None).value or {}
-        encoder_resolution = int(self.declare_parameter('encoder_resolution', 135).value)
-        wheel_baseline = float(self.declare_parameter('wheel_baseline', 0.0).value)
-        wheel_radius = float(self.declare_parameter('wheel_radius', 0.0).value)
+        # robot-level physical parameters come from /data/config/calibrations/robot/;
+        # ROS parameters can still override them
+        robot_params = get_robot_params()
+        self.get_logger().info(f'Robot parameters file: {get_calibration_file("robot")}')
+        encoder_resolution = int(self.declare_parameter('encoder_resolution', robot_params.encoder_resolution).value)
+        wheel_baseline = float(self.declare_parameter('wheel_baseline', robot_params.wheel_baseline).value)
+        wheel_radius = float(self.declare_parameter('wheel_radius', robot_params.wheel_radius).value)
 
         if not isinstance(filter_config, dict):
             self.get_logger().warn(
@@ -59,10 +64,8 @@ class LaneFilterNode(Node):
             filter_config = {}
 
         filter_config.setdefault('encoder_resolution', encoder_resolution)
-        if wheel_baseline:
-            filter_config.setdefault('wheel_baseline', wheel_baseline)
-        if wheel_radius:
-            filter_config.setdefault('wheel_radius', wheel_radius)
+        filter_config.setdefault('wheel_baseline', wheel_baseline)
+        filter_config.setdefault('wheel_radius', wheel_radius)
 
         try:
             self.filter = LaneFilterHistogram(**filter_config)

@@ -139,19 +139,16 @@ def generate_launch_description() -> LaunchDescription:
     #                ~car_cmd           (from lane_controller, for prediction)
     #   Publishes  : ~lane_pose         (d, phi estimate)
     # -----------------------------------------------------------------------
-    lane_filter_params = PathJoinSubstitution([
-        lane_filter_share,
-        "config",
-        "lane_filter_node",
-        param_file,
-    ])
+    # NOTE: loaded through the helper so that the nested `lane_filter_histogram_configuration`
+    #       block reaches the node (as a YAML string); the `param_file` argument does not apply here
+    lane_filter_params = _load_yaml_parameters("lane_filter", "config/lane_filter_node", "default.yaml")
 
     lane_filter_node = Node(
         package="lane_filter",
         executable="lane_filter_node",
         name="lane_filter_node",
         output="screen",
-        parameters=[lane_filter_params],
+        parameters=lane_filter_params,
         remappings=[
             # Receive ground-projected segments
             ("segment_list", "lineseglist_out"),
@@ -166,11 +163,16 @@ def generate_launch_description() -> LaunchDescription:
     #   Subscribes : ~lane_pose         (from lane_filter)
     #   Publishes  : ~car_cmd           (wheel commands)
     # -----------------------------------------------------------------------
+    lane_controller_params = os.path.join(
+        get_package_share_directory("lane_control"), "config", "lane_controller_node", "default.yaml"
+    )
+
     lane_controller_node = Node(
         package="lane_control",
         executable="lane_controller_node",
         name="lane_controller_node",
         output="screen",
+        parameters=[lane_controller_params],
         remappings=[
             # lane_pose resolves to /<veh>/lane_pose, which matches the lane filter
             # Publish under the "lane" source expected by car_cmd_switch_node (car-interface)

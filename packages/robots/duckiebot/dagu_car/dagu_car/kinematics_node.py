@@ -3,20 +3,32 @@ import rclpy
 from rclpy.node import Node
 
 from duckietown_msgs.msg import WheelsCmdStamped, Twist2DStamped
+from dt_robot_utils import get_robot_params, get_calibration_file, load_calibration
 
 
 class KinematicsNode(Node):
     def __init__(self):
         super().__init__('kinematics_node')
 
-        self.declare_parameter('k', 27.0)
-        self.declare_parameter('gain', 1.0)
-        self.declare_parameter('trim', 0.0)
-        self.declare_parameter('limit', 1.0)
-        self.declare_parameter('baseline', 0.1)
-        self.declare_parameter('radius', 0.0318)
-        self.declare_parameter('v_max', 1.0)
-        self.declare_parameter('omega_max', 8.0)
+        # Defaults come from the calibration files under /data/config/calibrations/:
+        #  - `robot/`      : physical parameters (wheel baseline and radius)
+        #  - `kinematics/` : wheel calibration (gain, trim, k, limit, v_max, omega_max)
+        # ROS parameters can still override them.
+        robot_params = get_robot_params()
+        kinematics = load_calibration('kinematics')
+        ignored = sorted(k for k in ('baseline', 'radius') if k in kinematics)
+        if ignored:
+            self.get_logger().info(
+                'Ignoring %s from the kinematics calibration: wheel geometry comes from the robot calibration.' % ignored
+            )
+        self.declare_parameter('k', float(kinematics.get('k', 27.0)))
+        self.declare_parameter('gain', float(kinematics.get('gain', 1.0)))
+        self.declare_parameter('trim', float(kinematics.get('trim', 0.0)))
+        self.declare_parameter('limit', float(kinematics.get('limit', 1.0)))
+        self.declare_parameter('baseline', robot_params.wheel_baseline)
+        self.declare_parameter('radius', robot_params.wheel_radius)
+        self.declare_parameter('v_max', float(kinematics.get('v_max', 1.0)))
+        self.declare_parameter('omega_max', float(kinematics.get('omega_max', 8.0)))
 
         self.k = float(self.get_parameter('k').value)
         self.gain = float(self.get_parameter('gain').value)
@@ -33,6 +45,8 @@ class KinematicsNode(Node):
         self.create_subscription(Twist2DStamped, 'car_cmd', self._on_car_cmd, 10)
         self.create_subscription(WheelsCmdStamped, 'wheels_cmd_executed', self._on_wheels_cmd_executed, 10)
 
+        self.get_logger().info('Robot parameters file: %s' % get_calibration_file('robot'))
+        self.get_logger().info('Kinematics calibration file: %s' % get_calibration_file('kinematics'))
         self.get_logger().info('Initialized with: %s' % json.dumps({
             'gain': self.gain,
             'trim': self.trim,

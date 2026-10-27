@@ -72,6 +72,9 @@ class AltitudeNode(Node):
                 "ToF sees no floor: no altitude published",
                 throttle_duration_sec=WARN_PERIOD,
             )
+            if self._offset is None:
+                self._samples.clear()
+                self._cal_start = None
             return
 
         if self._offset is None:

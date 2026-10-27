@@ -64,8 +64,6 @@ def generate_launch_description() -> LaunchDescription:
         ],
         output="screen",
         emulate_tty=True,
-        respawn=True,
-        respawn_delay=2.0,
     )
 
     return LaunchDescription([*args, altitude_node])

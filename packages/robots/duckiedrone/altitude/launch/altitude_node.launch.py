@@ -19,14 +19,6 @@ def generate_launch_description() -> LaunchDescription:
             description="Robot namespace",
         ),
         DeclareLaunchArgument(
-            "h_offset",
-            default_value="0.02",
-            description=(
-                "Offset between ToF sensor origin and ground "
-                "contact point."
-            ),
-        ),
-        DeclareLaunchArgument(
             "use_sim_time",
             default_value="false",
             description="Use simulation time",
@@ -49,7 +41,6 @@ def generate_launch_description() -> LaunchDescription:
         parameters=[
             config_file,
             {
-                "h_offset": LaunchConfiguration("h_offset"),
                 "use_sim_time": LaunchConfiguration("use_sim_time"),
             },
         ],

@@ -1,8 +1,12 @@
 /**:
   ros__parameters:
-    process_frequency: 20
-    track_len: 10
-    detect_interval: 5
-    img_scale: 1.0
-    base_homography_height: 0.063
-    flow_scale: 0.90
+    floor_rows: [430, 630]
+    max_corners: 150
+    # vedrone24 (Duckiematrix) camera; pdrone24 values are not set yet
+    camera_k: [311.2, 0.0, 240.0, 0.0, 311.07, 320.0, 0.0, 0.0, 1.0]
+    camera_d: [-0.0285, 0.0145, -0.0169, 0.0031]
+    mount_pitch_deg: 50.0
+    mount_yaw_right_deg: 0.0
+    camera_ahead: 0.121
+    camera_height_landed: 0.059
+    camera_delay: 0.0

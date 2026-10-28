@@ -43,13 +43,9 @@ def generate_launch_description() -> LaunchDescription:
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
         ],
         remappings=[
-            ("~/motion_vectors", "fback_flow_node/flows"),
-            ("~/range", "bottom_tof_driver_node/range"),
-            (
-                "~/projected_motion_vectors",
-                "ground_projection_node/lineseglist_out",
-            ),
-            ("~/lineseglist_out", "ground_projection_node/lineseglist_in"),
+            ("~/image", "camera_node/image/compressed"),
+            ("~/imu", "/mavros/imu/data"),
+            ("~/altitude", "altitude_node/altitude"),
         ],
         arguments=[
             "--ros-args",
@@ -58,8 +54,6 @@ def generate_launch_description() -> LaunchDescription:
         ],
         output="screen",
         emulate_tty=True,
-        respawn=True,
-        respawn_delay=2.0,
     )
 
     return LaunchDescription([*args, node])

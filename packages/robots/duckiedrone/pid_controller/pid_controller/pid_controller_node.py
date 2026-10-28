@@ -45,8 +45,9 @@ class PIDControllerNode(Node):
         self.previous_mode = DroneMode.DISARMED
         self.current_mode = DroneMode.DISARMED
 
-        self.position_control = False
-        self.last_position_control = False
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # self.position_control = False
+        # self.last_position_control = False
 
         self.current_position = Position()
         self.desired_position = Position(z=self.hover_height)
@@ -59,16 +60,18 @@ class PIDControllerNode(Node):
         self.velocity_error = Error()
         self.pid_error = Error()
 
-        self.desired_velocity_travel_distance = 0.1
-        self.desired_velocity_travel_time = 0.1
-        self.desired_yaw_velocity_travel_time = 0.25
-        self.desired_velocity_start_time: float | None = None
-        self.desired_yaw_velocity_start_time: float | None = None
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # self.desired_velocity_travel_distance = 0.1
+        # self.desired_velocity_travel_time = 0.1
+        # self.desired_yaw_velocity_travel_time = 0.25
+        # self.desired_velocity_start_time: float | None = None
+        # self.desired_yaw_velocity_start_time: float | None = None
 
         self.pid = PIDController()
         self.pid.thrust.setpoint = self.hover_height
-        self.lr_pid = PIDAxis(kp=20.0, ki=5.0, kd=10.0, midpoint=0.0, control_range=(-10.0, 10.0))
-        self.fb_pid = PIDAxis(kp=20.0, ki=5.0, kd=10.0, midpoint=0.0, control_range=(-10.0, 10.0))
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # self.lr_pid = PIDAxis(kp=20.0, ki=5.0, kd=10.0, midpoint=0.0, control_range=(-10.0, 10.0))
+        # self.fb_pid = PIDAxis(kp=20.0, ki=5.0, kd=10.0, midpoint=0.0, control_range=(-10.0, 10.0))
         self._sync_pid_gains()
 
         self.last_pose_time: float | None = None
@@ -77,16 +80,18 @@ class PIDControllerNode(Node):
         self.previous_rpy = RPY()
         self.current_state = Odometry()
         self.previous_state = Odometry()
-        self.moving = False
-        self.safety_threshold = 1.5
-        self.lost = False
-        self.absolute_desired_position = False
-        self.path_planning = True
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # self.moving = False
+        # self.safety_threshold = 1.5
+        # self.lost = False
+        # self.absolute_desired_position = False
+        # self.path_planning = True
         self._last_fly_command = DroneControl()
 
         self.cmd_pub = self.create_publisher(AttitudeTarget, "~/commands", 1)
         self.debug_pub = self.create_publisher(PIDDebugInfo, "~/debug/pid", 10)
-        self.position_control_pub = self.create_publisher(Bool, "~/position_control", 1)
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # self.position_control_pub = self.create_publisher(Bool, "~/position_control", 1)
         self.heartbeat_pub = self.create_publisher(Empty, "~/heartbeat", 1)
 
         latched_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -94,11 +99,12 @@ class PIDControllerNode(Node):
 
         self.create_subscription(FCUState, "~/mode", self.current_mode_callback, 1)
         self.create_subscription(Odometry, "~/state", self.current_state_callback, 1)
-        self.create_subscription(Pose, "desired/pose", self.desired_pose_callback, 1)
-        self.create_subscription(Twist, "desired/twist", self.desired_twist_callback, 1)
-        self.create_subscription(Bool, "camera_node/lost", self.lost_callback, 1)
-        self.create_subscription(Empty, "reset_transform", self.reset_callback, 1)
-        self.create_subscription(Bool, "~/position_control", self.position_control_callback, 1)
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # self.create_subscription(Pose, "desired/pose", self.desired_pose_callback, 1)
+        # self.create_subscription(Twist, "desired/twist", self.desired_twist_callback, 1)
+        # self.create_subscription(Bool, "camera_node/lost", self.lost_callback, 1)
+        # self.create_subscription(Empty, "reset_transform", self.reset_callback, 1)
+        # self.create_subscription(Bool, "~/position_control", self.position_control_callback, 1)
 
         self.set_mode_client = self.create_client(SetMode, "~/set_mode")
         self.takeoff_srv = self.create_service(SetBool, "~/takeoff", self.takeoff_srv_cb)
@@ -179,47 +185,48 @@ class PIDControllerNode(Node):
         self.current_state = state
         self.state_to_three_dim_vec_structs()
 
-    def desired_pose_callback(self, msg: Pose) -> None:
-        self.last_desired_position = Position(
-            self.desired_position.x,
-            self.desired_position.y,
-            self.desired_position.z,
-        )
+    # Not used for altitude control (DTSW-8514); kept for the velocity step.
+    # def desired_pose_callback(self, msg: Pose) -> None:
+    #     self.last_desired_position = Position(
+    #         self.desired_position.x,
+    #         self.desired_position.y,
+    #         self.desired_position.z,
+    #     )
 
-        if self.absolute_desired_position:
-            self.desired_position.x = msg.position.x
-            self.desired_position.y = msg.position.y
-            self.desired_position.z = (
-                msg.position.z
-                if 0.0 <= msg.position.z <= self.max_height * 0.8
-                else self.last_desired_position.z
-            )
-        else:
-            self.desired_position.x = self.current_position.x + msg.position.x
-            self.desired_position.y = self.current_position.y + msg.position.y
-            desired_z = self.last_desired_position.z + msg.position.z
-            self.desired_position.z = (
-                desired_z
-                if 0.0 <= desired_z <= self.max_height * 0.8
-                else self.last_desired_position.z
-            )
+    #     if self.absolute_desired_position:
+    #         self.desired_position.x = msg.position.x
+    #         self.desired_position.y = msg.position.y
+    #         self.desired_position.z = (
+    #             msg.position.z
+    #             if 0.0 <= msg.position.z <= self.max_height * 0.8
+    #             else self.last_desired_position.z
+    #         )
+    #     else:
+    #         self.desired_position.x = self.current_position.x + msg.position.x
+    #         self.desired_position.y = self.current_position.y + msg.position.y
+    #         desired_z = self.last_desired_position.z + msg.position.z
+    #         self.desired_position.z = (
+    #             desired_z
+    #             if 0.0 <= desired_z <= self.max_height * 0.8
+    #             else self.last_desired_position.z
+    #         )
 
-        if self.desired_position != self.last_desired_position:
-            self.moving = True
-            self.get_logger().info("moving")
+    #     if self.desired_position != self.last_desired_position:
+    #         self.moving = True
+    #         self.get_logger().info("moving")
 
-        self._desired_height_pub.publish(Float32(data=float(self.desired_position.z)))
+    #     self._desired_height_pub.publish(Float32(data=float(self.desired_position.z)))
 
-    def desired_twist_callback(self, msg: Twist) -> None:
-        self.desired_velocity.x = msg.linear.x
-        self.desired_velocity.y = msg.linear.y
-        self.desired_velocity.z = msg.linear.z
-        self.desired_yaw_velocity = msg.angular.z
-        self.desired_velocity_start_time = None
-        self.desired_yaw_velocity_start_time = None
-        self.get_logger().info(f"Desired_velocity set to {self.desired_velocity}")
-        if self.path_planning:
-            self.calculate_travel_time()
+    # def desired_twist_callback(self, msg: Twist) -> None:
+    #     self.desired_velocity.x = msg.linear.x
+    #     self.desired_velocity.y = msg.linear.y
+    #     self.desired_velocity.z = msg.linear.z
+    #     self.desired_yaw_velocity = msg.angular.z
+    #     self.desired_velocity_start_time = None
+    #     self.desired_yaw_velocity_start_time = None
+    #     self.get_logger().info(f"Desired_velocity set to {self.desired_velocity}")
+    #     if self.path_planning:
+    #         self.calculate_travel_time()
 
     def current_mode_callback(self, msg: FCUState) -> None:
         if msg.armed:
@@ -228,29 +235,30 @@ class PIDControllerNode(Node):
         else:
             self.current_mode = DroneMode.DISARMED
 
-    def position_control_callback(self, msg: Bool) -> None:
-        self.position_control = msg.data
-        if self.position_control:
-            self.desired_position = Position(
-                self.current_position.x,
-                self.current_position.y,
-                self.current_position.z,
-            )
-        if self.position_control != self.last_position_control:
-            self.get_logger().info(f"Position control: {self.position_control}")
-            self.last_position_control = self.position_control
+    # Not used for altitude control (DTSW-8514); kept for the velocity step.
+    # def position_control_callback(self, msg: Bool) -> None:
+    #     self.position_control = msg.data
+    #     if self.position_control:
+    #         self.desired_position = Position(
+    #             self.current_position.x,
+    #             self.current_position.y,
+    #             self.current_position.z,
+    #         )
+    #     if self.position_control != self.last_position_control:
+    #         self.get_logger().info(f"Position control: {self.position_control}")
+    #         self.last_position_control = self.position_control
 
-    def reset_callback(self, _msg: Empty) -> None:
-        self.current_position = Position(z=self.current_position.z)
-        self.desired_position = Position(
-            self.current_position.x,
-            self.current_position.y,
-            self.current_position.z,
-        )
-        self.desired_velocity = Velocity()
+    # def reset_callback(self, _msg: Empty) -> None:
+    #     self.current_position = Position(z=self.current_position.z)
+    #     self.desired_position = Position(
+    #         self.current_position.x,
+    #         self.current_position.y,
+    #         self.current_position.z,
+    #     )
+    #     self.desired_velocity = Velocity()
 
-    def lost_callback(self, msg: Bool) -> None:
-        self.lost = msg.data
+    # def lost_callback(self, msg: Bool) -> None:
+    #     self.lost = msg.data
 
     def control_loop_callback(self) -> None:
         if not self.safety_check():
@@ -263,7 +271,8 @@ class PIDControllerNode(Node):
         if self.previous_mode == DroneMode.DISARMED:
             if self.current_mode == DroneMode.ARMED:
                 self.reset()
-                self.position_control_pub.publish(Bool(data=False))
+                # Not used for altitude control (DTSW-8514); kept for the velocity step.
+                # self.position_control_pub.publish(Bool(data=False))
                 self.log_mode_transition()
                 self.previous_mode = self.current_mode
             return
@@ -290,19 +299,20 @@ class PIDControllerNode(Node):
     def step(self) -> tuple[tuple[float, float, float], float]:
         current_time = time.monotonic()
         self.calc_error()
-        if self.position_control:
-            if self.position_error.xy_magnitude < self.safety_threshold and not self.lost:
-                if self.moving:
-                    if self.position_error.magnitude > 0.05:
-                        self.pid_error = self.pid_error - self.velocity_error
-                    else:
-                        self.moving = False
-                        self.get_logger().info("not moving")
-            else:
-                self.position_control_pub.publish(Bool(data=False))
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # if self.position_control:
+        #     if self.position_error.xy_magnitude < self.safety_threshold and not self.lost:
+        #         if self.moving:
+        #             if self.position_error.magnitude > 0.05:
+        #                 self.pid_error = self.pid_error - self.velocity_error
+        #             else:
+        #                 self.moving = False
+        #                 self.get_logger().info("not moving")
+        #     else:
+        #         self.position_control_pub.publish(Bool(data=False))
 
-        if self.desired_velocity.magnitude > 0.0 or abs(self.desired_yaw_velocity) > 0.0:
-            self.adjust_desired_velocity()
+        # if self.desired_velocity.magnitude > 0.0 or abs(self.desired_yaw_velocity) > 0.0:
+        #     self.adjust_desired_velocity()
 
         commands, thrust = self.pid.step(self.pid_error, current_time, self.desired_yaw_velocity)
         self._last_fly_command = DroneControl(
@@ -328,22 +338,23 @@ class PIDControllerNode(Node):
         self.previous_rpy = self.current_rpy
         self.current_rpy = RPY(*self._euler_from_quaternion(pose.orientation))
 
-    def adjust_desired_velocity(self) -> None:
-        current_time = time.monotonic()
-        if self.desired_velocity_start_time is not None:
-            if current_time - self.desired_velocity_start_time > self.desired_velocity_travel_time:
-                self.desired_velocity.x = 0.0
-                self.desired_velocity.y = 0.0
-                self.desired_velocity_start_time = None
-        else:
-            self.desired_velocity_start_time = current_time
+    # Not used for altitude control (DTSW-8514); kept for the velocity step.
+    # def adjust_desired_velocity(self) -> None:
+    #     current_time = time.monotonic()
+    #     if self.desired_velocity_start_time is not None:
+    #         if current_time - self.desired_velocity_start_time > self.desired_velocity_travel_time:
+    #             self.desired_velocity.x = 0.0
+    #             self.desired_velocity.y = 0.0
+    #             self.desired_velocity_start_time = None
+    #     else:
+    #         self.desired_velocity_start_time = current_time
 
-        if self.desired_yaw_velocity_start_time is not None:
-            if current_time - self.desired_yaw_velocity_start_time > self.desired_yaw_velocity_travel_time:
-                self.desired_yaw_velocity = 0.0
-                self.desired_yaw_velocity_start_time = None
-        else:
-            self.desired_yaw_velocity_start_time = current_time
+    #     if self.desired_yaw_velocity_start_time is not None:
+    #         if current_time - self.desired_yaw_velocity_start_time > self.desired_yaw_velocity_travel_time:
+    #             self.desired_yaw_velocity = 0.0
+    #             self.desired_yaw_velocity_start_time = None
+    #     else:
+    #         self.desired_yaw_velocity_start_time = current_time
 
     def calc_error(self) -> None:
         pose_dt = 0.0
@@ -366,19 +377,21 @@ class PIDControllerNode(Node):
             self.desired_position.z - self.current_position.z,
         )
 
-        if self.position_control:
-            lr_step = self.lr_pid.step(self.position_error.x, pose_dt)
-            fb_step = self.fb_pid.step(self.position_error.y, pose_dt)
-            self.pid_error.x += lr_step
-            self.pid_error.y += fb_step
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # if self.position_control:
+        #     lr_step = self.lr_pid.step(self.position_error.x, pose_dt)
+        #     fb_step = self.fb_pid.step(self.position_error.y, pose_dt)
+        #     self.pid_error.x += lr_step
+        #     self.pid_error.y += fb_step
 
-    def calculate_travel_time(self) -> None:
-        if self.desired_velocity.magnitude > 0.0:
-            self.desired_velocity_travel_time = (
-                self.desired_velocity_travel_distance / self.desired_velocity.xy_magnitude
-            )
-        else:
-            self.desired_velocity_travel_time = 0.0
+    # Not used for altitude control (DTSW-8514); kept for the velocity step.
+    # def calculate_travel_time(self) -> None:
+    #     if self.desired_velocity.magnitude > 0.0:
+    #         self.desired_velocity_travel_time = (
+    #             self.desired_velocity_travel_distance / self.desired_velocity.xy_magnitude
+    #         )
+    #     else:
+    #         self.desired_velocity_travel_time = 0.0
 
     def reset(self) -> None:
         self.position_error = Error()
@@ -390,8 +403,9 @@ class PIDControllerNode(Node):
         self.velocity_error = Error()
         self.desired_velocity = Velocity()
         self.pid.reset()
-        self.lr_pid.reset()
-        self.fb_pid.reset()
+        # Not used for altitude control (DTSW-8514); kept for the velocity step.
+        # self.lr_pid.reset()
+        # self.fb_pid.reset()
 
     def publish_control_cmd(self, commands: tuple[float, float, float], thrust: float) -> None:
         if thrust < 0.0 or thrust > 1.0:

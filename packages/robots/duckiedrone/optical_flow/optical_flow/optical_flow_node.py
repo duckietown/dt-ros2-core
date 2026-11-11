@@ -371,6 +371,8 @@ class OpticalFlowNode(Node):
         )
         fb_error = np.linalg.norm((pb - p0)[:, 0], axis=1)
         good = (st[:, 0] == 1) & (stb[:, 0] == 1) & (fb_error < FB_MAX_ERROR)
+        if np.count_nonzero(good) < MIN_VECTORS:
+            return None
         g0, hit0 = self.floor_points(p0[good, 0], old_r, old_h)
         g1, hit1 = self.floor_points(p1[good, 0], r_world_body, height)
         hit = hit0 & hit1

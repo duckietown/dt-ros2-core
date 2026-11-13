@@ -72,6 +72,7 @@ SIGMA_SPREAD_FACTOR = 1.25  # median absolute spread to sigma
 IMU_BUFFER = 500  # samples
 HEIGHT_BUFFER = 100  # samples
 HEIGHT_STALE = 0.3  # [s] newest height older than this: no height
+IMU_STALE = 0.3  # [s] newest attitude older than this: no attitude
 SLERP_LINEAR_DOT = 0.9995
 MIN_DT = 1e-6  # [s]
 
@@ -256,9 +257,10 @@ class OpticalFlowNode(Node):
 
     def image_cb(self, msg: CompressedImage) -> None:
         """Turn one camera frame into a velocity over the floor."""
-        if not self._imu:
-            return
         t = stamp_to_sec(msg) - self._delay
+        if not self._imu or t - self._imu[-1][0] > IMU_STALE:
+            self._prev = None
+            return
         altitude = self.height_at(t)
         if altitude is None:
             self._prev = None

@@ -53,6 +53,8 @@ import rclpy
 import yaml
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from numpy.typing import NDArray
+from rclpy.executors import ExternalShutdownException
+from rclpy.experimental import EventsExecutor
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CompressedImage, Imu, Range
@@ -528,8 +530,9 @@ def main(args: list[str] | None = None) -> None:
     rclpy.init(args=args)
     node = OpticalFlowNode()
     try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
+        # The default executor costs about 3 ms of Pi CPU per IMU message
+        rclpy.spin(node, executor=EventsExecutor())
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         node.destroy_node()

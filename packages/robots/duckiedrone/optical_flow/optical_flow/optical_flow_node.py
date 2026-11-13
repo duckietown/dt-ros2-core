@@ -220,7 +220,7 @@ class OpticalFlowNode(Node):
         super().__init__("optical_flow_node")
 
         self._rows = self.declare_parameter("floor_rows", [430, 630]).value
-        self._max_corners = self.declare_parameter("max_corners", 150).value
+        self._max_corners = self.declare_parameter("max_corners", 100).value
         r0, r1 = (r // DECODE_SCALE for r in self._rows)
         self._crop = (max(r0 - CROP_MARGIN, 0), r1 + CROP_MARGIN)
         self._delay = self.declare_parameter("camera_delay", 0.0).value

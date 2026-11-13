@@ -1,5 +1,5 @@
 /**:
   ros__parameters:
     floor_rows: [430, 630]
-    max_corners: 150
+    max_corners: 100
     camera_delay: 0.0

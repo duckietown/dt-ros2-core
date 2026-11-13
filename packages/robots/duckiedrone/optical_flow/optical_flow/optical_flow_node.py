@@ -4,7 +4,8 @@ Publishes the drone's velocity over the floor [m/s] from the bottom
 camera, the IMU attitude and the altitude node's height.
 
 Per frame:
-1. Decode the JPEG to a half-size gray image.
+1. Decode the JPEG to a half-size gray image and keep only the rows
+   around the floor band, so tracking works on a small image.
 2. Find corners in the floor band of the previous frame and track them
    into the new one with Lucas-Kanade. Keep a track when tracking it
    back lands within FB_MAX_ERROR of where it started.
@@ -64,6 +65,7 @@ LK_CRITERIA = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 20, 0.01)
 CORNER_QUALITY = 0.01
 CORNER_MIN_DISTANCE = 8  # [px, half size]
 MASK_MARGIN = 8  # [px, half size] left and right edge left out
+CROP_MARGIN = 32  # [px, half size] rows kept above and below the band
 FB_MAX_ERROR = 0.5  # [px, half size] forward-backward check
 MIN_VECTORS = 5  # fewer kept tracks: no displacement for this frame
 RAY_MIN_DOWN = 1e-3  # rays flatter than this never reach the floor
@@ -219,6 +221,8 @@ class OpticalFlowNode(Node):
 
         self._rows = self.declare_parameter("floor_rows", [430, 630]).value
         self._max_corners = self.declare_parameter("max_corners", 150).value
+        r0, r1 = (r // DECODE_SCALE for r in self._rows)
+        self._crop = (max(r0 - CROP_MARGIN, 0), r1 + CROP_MARGIN)
         self._delay = self.declare_parameter("camera_delay", 0.0).value
 
         try:
@@ -347,6 +351,7 @@ class OpticalFlowNode(Node):
             self.get_logger().warning("Could not decode a camera frame.")
             self._prev = None
             return
+        gray = gray[self._crop[0] : self._crop[1]]
         r_world_body = self.attitude_at(t)
         height = self.camera_height(altitude, r_world_body)
         self._heartbeat.publish(Empty())
@@ -402,20 +407,21 @@ class OpticalFlowNode(Node):
     ) -> tuple[float, float, int, float] | None:
         """Drone displacement between two frames.
 
-        old and new are (half-size gray image, body-to-world rotation,
-        camera height [m]). Each track end is projected with its own
-        frame's attitude and height. Returns (forward, left) [m] in the
-        new frame's heading, the number of tracks, and the spread [m]:
-        the median distance of the tracks from the result. None when
-        there are too few tracks.
+        old and new are (half-size gray image cropped to the rows around
+        the floor band, body-to-world rotation, camera height [m]). Each
+        track end is projected with its own frame's attitude and height.
+        Returns (forward, left) [m] in the new frame's heading, the number
+        of tracks, and the spread [m]: the median distance of the tracks
+        from the result. None when there are too few tracks.
         """
         old_gray, old_r, old_h = old
         gray, r_world_body, height = new
+        c0 = self._crop[0]
         if self._mask is None:
             self._mask = np.zeros_like(gray)
             r0, r1 = self._rows
             self._mask[
-                r0 // DECODE_SCALE : r1 // DECODE_SCALE,
+                r0 // DECODE_SCALE - c0 : r1 // DECODE_SCALE - c0,
                 MASK_MARGIN:-MASK_MARGIN,
             ] = 255
         p0 = cv2.goodFeaturesToTrack(
@@ -449,8 +455,13 @@ class OpticalFlowNode(Node):
         good = (st[:, 0] == 1) & (stb[:, 0] == 1) & (fb_error < FB_MAX_ERROR)
         if np.count_nonzero(good) < MIN_VECTORS:
             return None
-        g0, hit0 = self.floor_points(p0[good, 0], old_r, old_h)
-        g1, hit1 = self.floor_points(p1[good, 0], r_world_body, height)
+        offset = np.array([0.0, c0])
+        g0, hit0 = self.floor_points(p0[good, 0] + offset, old_r, old_h)
+        g1, hit1 = self.floor_points(
+            p1[good, 0] + offset,
+            r_world_body,
+            height,
+        )
         hit = hit0 & hit1
         n = int(hit.sum())
         if n < MIN_VECTORS:

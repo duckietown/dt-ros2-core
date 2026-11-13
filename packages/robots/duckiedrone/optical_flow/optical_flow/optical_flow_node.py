@@ -35,6 +35,9 @@ ROS parameters:
     camera_height_landed [m]: camera above the floor when landed, where
         the altitude node reads 0.
     camera_delay [s]: image stamp minus exposure time.
+
+The velocity is published in <robot>/base_stabilized: base_link with
+roll and pitch removed.
 """
 
 import math
@@ -166,7 +169,11 @@ class OpticalFlowNode(Node):
         self._k = np.array(k, dtype=np.float64).reshape(3, 3)
         self._d = np.array(d, dtype=np.float64)
         self._camera_to_body = camera_to_body(pitch, yaw)
-        self._frame_id = self.get_namespace().strip("/") + "/base_link"
+        # base_link with roll and pitch removed: the velocity is along the
+        # heading, not along the tilted body axes
+        self._frame_id = (
+            self.get_namespace().strip("/") + "/base_stabilized"
+        )
 
         self._imu: deque[tuple[float, NDArray[np.float64], float]] = deque(
             maxlen=IMU_BUFFER,

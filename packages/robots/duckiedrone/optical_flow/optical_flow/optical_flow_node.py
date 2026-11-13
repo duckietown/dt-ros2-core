@@ -522,6 +522,9 @@ class OpticalFlowNode(Node):
 
 def main(args: list[str] | None = None) -> None:
     """Run the optical flow node."""
+    # OpenCV's worker threads cost CPU on the Pi without making a frame
+    # meaningfully faster; one thread still leaves most of the frame time.
+    cv2.setNumThreads(1)
     rclpy.init(args=args)
     node = OpticalFlowNode()
     try:

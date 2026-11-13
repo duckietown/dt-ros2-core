@@ -9,7 +9,6 @@
 
   <buildtool_depend>ament_python</buildtool_depend>
 
-  <exec_depend>ground_projection</exec_depend>
   <exec_depend>optical_flow</exec_depend>
 
   <export>

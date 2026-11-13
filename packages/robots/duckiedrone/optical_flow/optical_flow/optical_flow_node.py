@@ -27,14 +27,16 @@ ROS parameters:
     floor_rows [px, full size]: first and last image row of the floor
         band where corners are searched.
     max_corners: corners searched per frame.
-    camera_k: 3x3 camera matrix of the full image, row by row.
-    camera_d: fisheye (equidistant) distortion k1..k4.
-    mount_pitch_deg: camera tilt down from the IMU's level.
-    mount_yaw_right_deg: camera turn to the right.
-    camera_ahead [m]: camera distance in front of the body origin.
-    camera_height_landed [m]: camera above the floor when landed, where
-        the altitude node reads 0.
     camera_delay [s]: image stamp minus exposure time.
+
+Camera calibration, read at startup from the robot's files in
+/data/config/calibrations (the node does not start without them):
+    camera_intrinsic/<robot>.yaml: camera matrix and fisheye
+        (equidistant) distortion of the full image.
+    camera_extrinsic/<robot>.yaml: homography to the floor, taken with
+        the drone landed. It gives the camera tilt down, turn to the
+        right, distance in front of the body origin, and height above
+        the floor where the altitude node reads 0.
 
 The velocity is published in <robot>/base_stabilized: base_link with
 roll and pitch removed.
@@ -42,10 +44,12 @@ roll and pitch removed.
 
 import math
 from collections import deque
+from pathlib import Path
 
 import cv2
 import numpy as np
 import rclpy
+import yaml
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from numpy.typing import NDArray
 from rclpy.node import Node
@@ -78,6 +82,8 @@ HEIGHT_STALE = 0.3  # [s] newest height older than this: no height
 IMU_STALE = 0.3  # [s] newest attitude older than this: no attitude
 SLERP_LINEAR_DOT = 0.9995
 MIN_DT = 1e-6  # [s]
+
+CALIBRATIONS = Path("/data/config/calibrations")
 
 
 def stamp_to_sec(msg: Imu | Range | CompressedImage) -> float:
@@ -146,6 +152,72 @@ def camera_to_body(
     return rot_z @ level
 
 
+def camera_pose(h: list[float]) -> tuple[float, float, float, float]:
+    """Camera pitch down [deg], yaw right [deg], ahead [m], height [m].
+
+    h is the extrinsic homography from undistorted normalised image
+    coordinates to the floor (x forward, y left), taken with the drone
+    landed. Its inverse holds the floor axes and origin in camera axes,
+    up to a sign; the right sign puts the camera above the floor.
+    """
+    m = np.linalg.inv(np.array(h, dtype=np.float64).reshape(3, 3))
+    m /= np.linalg.norm(m[:, 0])
+    for sign in (1.0, -1.0):
+        r1, r2, t = sign * m[:, 0], sign * m[:, 1], sign * m[:, 2]
+        rot = np.column_stack([r1, r2, np.cross(r1, r2)])
+        centre = -rot.T @ t
+        if centre[2] > 0:
+            break
+    else:
+        msg = "the homography does not put the camera above the floor"
+        raise ValueError(msg)
+    axis = rot.T[:, 2] / np.linalg.norm(rot.T[:, 2])
+    pitch = math.degrees(math.asin(-axis[2]))
+    yaw_right = -math.degrees(math.atan2(axis[1], axis[0]))
+    return pitch, yaw_right, float(centre[0]), float(centre[2])
+
+
+def load_calibration(
+    robot: str,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], tuple[float, ...]]:
+    """Lens matrix, fisheye distortion and camera pose of a robot.
+
+    Read from the robot's intrinsic and extrinsic calibration files.
+    Raises RuntimeError naming the file when one is missing or wrong.
+    """
+    files = {
+        kind: CALIBRATIONS / f"camera_{kind}" / f"{robot}.yaml"
+        for kind in ("intrinsic", "extrinsic")
+    }
+    try:
+        with files["intrinsic"].open() as f:
+            lens = yaml.safe_load(f)
+        if lens["distortion_model"] != "equidistant":
+            model = lens["distortion_model"]
+            msg = f"distortion model {model}, not equidistant"
+            raise ValueError(msg)
+        k = np.array(lens["camera_matrix"]["data"], dtype=np.float64)
+        d = np.array(lens["distortion_coefficients"]["data"], dtype=np.float64)
+        k, d = k.reshape(3, 3), d.reshape(4)
+    except (OSError, KeyError, TypeError, ValueError, yaml.YAMLError) as e:
+        msg = f"bad intrinsic calibration {files['intrinsic']}: {e!r}"
+        raise RuntimeError(msg) from e
+    try:
+        with files["extrinsic"].open() as f:
+            pose = camera_pose(yaml.safe_load(f)["homography"])
+    except (
+        OSError,
+        KeyError,
+        TypeError,
+        ValueError,
+        np.linalg.LinAlgError,
+        yaml.YAMLError,
+    ) as e:
+        msg = f"bad extrinsic calibration {files['extrinsic']}: {e!r}"
+        raise RuntimeError(msg) from e
+    return k, d, pose
+
+
 class OpticalFlowNode(Node):
     """Measure the speed of the drone over the floor from the camera."""
 
@@ -155,20 +227,22 @@ class OpticalFlowNode(Node):
 
         self._rows = self.declare_parameter("floor_rows", [430, 630]).value
         self._max_corners = self.declare_parameter("max_corners", 150).value
-        k = self.declare_parameter("camera_k", [0.0] * 9).value
-        d = self.declare_parameter("camera_d", [0.0] * 4).value
-        pitch = self.declare_parameter("mount_pitch_deg", 50.0).value
-        yaw = self.declare_parameter("mount_yaw_right_deg", 0.0).value
-        self._ahead = self.declare_parameter("camera_ahead", 0.0).value
-        self._height_landed = self.declare_parameter(
-            "camera_height_landed",
-            0.0,
-        ).value
         self._delay = self.declare_parameter("camera_delay", 0.0).value
 
-        self._k = np.array(k, dtype=np.float64).reshape(3, 3)
-        self._d = np.array(d, dtype=np.float64)
+        try:
+            self._k, self._d, pose = load_calibration(
+                self.get_namespace().strip("/"),
+            )
+        except RuntimeError as e:
+            self.get_logger().fatal(f"Not starting: {e}")
+            raise
+        pitch, yaw, self._ahead, self._height_landed = pose
         self._camera_to_body = camera_to_body(pitch, yaw)
+        self.get_logger().info(
+            f"Camera: f {self._k[0, 0]:.1f} px, pitch down {pitch:.1f} deg, "
+            f"yaw right {yaw:.1f} deg, ahead {self._ahead:.3f} m, "
+            f"landed height {self._height_landed:.3f} m",
+        )
         # base_link with roll and pitch removed: the velocity is along the
         # heading, not along the tilted body axes
         self._frame_id = (

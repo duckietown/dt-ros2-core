@@ -34,9 +34,9 @@ Camera calibration, read at startup from the robot's files in
     camera_intrinsic/<robot>.yaml: camera matrix and fisheye
         (equidistant) distortion of the full image.
     camera_extrinsic/<robot>.yaml: homography to the floor, taken with
-        the drone landed. It gives the camera tilt down, turn to the
-        right, distance in front of the body origin, and height above
-        the floor where the altitude node reads 0.
+        the drone landed. It gives the camera orientation (tilt, turn
+        and roll), distance in front of the body origin, and height
+        above the floor where the altitude node reads 0.
 
 The velocity is published in <robot>/base_stabilized: base_link with
 roll and pitch removed.
@@ -123,42 +123,18 @@ def slerp(
     return q / np.linalg.norm(q)
 
 
-def camera_to_body(
-    pitch_deg: float,
-    yaw_right_deg: float,
-) -> NDArray[np.float64]:
-    """Rotation from camera axes (x right, y down, z out) to body.
-
-    Columns are the camera axes in body coordinates. Level camera
-    looking forward: right = -y, down = -z, out = +x. Tilting it down
-    by pitch turns out towards -z and down towards -x.
-    """
-    th = math.radians(pitch_deg)
-    level = np.array(
-        [
-            [0.0, -math.sin(th), math.cos(th)],
-            [-1.0, 0.0, 0.0],
-            [0.0, -math.cos(th), -math.sin(th)],
-        ],
-    )
-    yaw = -math.radians(yaw_right_deg)
-    rot_z = np.array(
-        [
-            [math.cos(yaw), -math.sin(yaw), 0.0],
-            [math.sin(yaw), math.cos(yaw), 0.0],
-            [0.0, 0.0, 1.0],
-        ],
-    )
-    return rot_z @ level
-
-
-def camera_pose(h: list[float]) -> tuple[float, float, float, float]:
-    """Camera pitch down [deg], yaw right [deg], ahead [m], height [m].
+def camera_pose(
+    h: list[float],
+) -> tuple[NDArray[np.float64], float, float]:
+    """Camera-to-body rotation, distance ahead [m] and height [m].
 
     h is the extrinsic homography from undistorted normalised image
     coordinates to the floor (x forward, y left), taken with the drone
     landed. Its inverse holds the floor axes and origin in camera axes,
-    up to a sign; the right sign puts the camera above the floor.
+    up to scale and sign; the right sign puts the camera above the
+    floor. The rotation's columns are the camera axes (x right, y down,
+    z out) in body coordinates, made exactly orthonormal. It keeps the
+    camera's roll as well as its tilt and turn.
     """
     m = np.linalg.inv(np.array(h, dtype=np.float64).reshape(3, 3))
     m /= np.linalg.norm(m[:, 0])
@@ -171,15 +147,31 @@ def camera_pose(h: list[float]) -> tuple[float, float, float, float]:
     else:
         msg = "the homography does not put the camera above the floor"
         raise ValueError(msg)
-    axis = rot.T[:, 2] / np.linalg.norm(rot.T[:, 2])
-    pitch = math.degrees(math.asin(-axis[2]))
-    yaw_right = -math.degrees(math.atan2(axis[1], axis[0]))
-    return pitch, yaw_right, float(centre[0]), float(centre[2])
+    u, _, vt = np.linalg.svd(rot)
+    return (u @ vt).T, float(centre[0]), float(centre[2])
+
+
+def mount_angles(
+    camera_to_body: NDArray[np.float64],
+) -> tuple[float, float, float]:
+    """Camera tilt down, turn right and roll [deg], for the log.
+
+    Roll is positive when the image's right side looks higher.
+    """
+    out, right = camera_to_body[:, 2], camera_to_body[:, 0]
+    pitch = math.degrees(math.asin(-out[2]))
+    yaw_right = -math.degrees(math.atan2(out[1], out[0]))
+    roll = math.degrees(math.asin(right[2]))
+    return pitch, yaw_right, roll
 
 
 def load_calibration(
     robot: str,
-) -> tuple[NDArray[np.float64], NDArray[np.float64], tuple[float, ...]]:
+) -> tuple[
+    NDArray[np.float64],
+    NDArray[np.float64],
+    tuple[NDArray[np.float64], float, float],
+]:
     """Lens matrix, fisheye distortion and camera pose of a robot.
 
     Read from the robot's intrinsic and extrinsic calibration files.
@@ -236,11 +228,12 @@ class OpticalFlowNode(Node):
         except RuntimeError as e:
             self.get_logger().fatal(f"Not starting: {e}")
             raise
-        pitch, yaw, self._ahead, self._height_landed = pose
-        self._camera_to_body = camera_to_body(pitch, yaw)
+        self._camera_to_body, self._ahead, self._height_landed = pose
+        pitch, yaw, roll = mount_angles(self._camera_to_body)
         self.get_logger().info(
             f"Camera: f {self._k[0, 0]:.1f} px, pitch down {pitch:.1f} deg, "
-            f"yaw right {yaw:.1f} deg, ahead {self._ahead:.3f} m, "
+            f"yaw right {yaw:.1f} deg, roll {roll:+.1f} deg, "
+            f"ahead {self._ahead:.3f} m, "
             f"landed height {self._height_landed:.3f} m",
         )
         # base_link with roll and pitch removed: the velocity is along the

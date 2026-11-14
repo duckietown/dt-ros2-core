@@ -1,7 +1,9 @@
 /**:
   ros__parameters:
     # Initial state of the FSM
-    initial_state: "LANE_FOLLOWING"
+    # Same as ROS 1 (dt-core): start under joystick control and let the autopilot toggle
+    # (joystick_override -> False) move the FSM into LANE_FOLLOWING.
+    initial_state: "NORMAL_JOYSTICK_CONTROL"
 
     events: # Maps from subscribing topic to signal ids
       joystick_override_on:

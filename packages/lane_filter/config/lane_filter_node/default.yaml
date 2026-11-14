@@ -1,10 +1,11 @@
-lane_filter_node:
+# NOTE: the header must be `/**` (any node name / namespace) because the node runs under the
+#       robot namespace, e.g. /<veh>/lane_filter_node.
+# NOTE: encoder_resolution, wheel_baseline and wheel_radius are read by the node from
+#       /data/config/calibrations/robot/ and do not belong here (set them only to override).
+/**:
   ros__parameters:
     predict_frequency: 10.0
     debug: true
-    encoder_resolution: 135
-    wheel_baseline: 0.1
-    wheel_radius: 0.0318
     lane_filter_histogram_configuration:
       mean_d_0: 0.0
       mean_phi_0: 0.0

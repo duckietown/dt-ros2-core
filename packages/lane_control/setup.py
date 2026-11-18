@@ -10,7 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages', ['resource/lane_control']),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/lane_controller_node.launch.py']),
-        ('share/' + package_name + '/config', ['config/lane_controller.yaml']),
+        ('share/' + package_name + '/config/lane_controller_node', ['config/lane_controller_node/default.yaml']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

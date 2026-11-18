@@ -1,0 +1,35 @@
+# lane_control/lane_controller_node
+# Same values as dt-core (ROS 1) `lane_controller_node/default.yaml`.
+# NOTE: the header must be `/**` (any node name / namespace) because the node runs under the
+#       robot namespace, e.g. /<veh>/lane_controller_node.
+/**:
+  ros__parameters:
+    v_bar: 0.19
+    k_d_d: -2.0
+    k_d_phi: -3.0
+    k_I_d: -3.0
+    theta_thres_max: 0.75  #0.523
+    theta_thres_min: -0.5
+    d_thres: 0.2615
+    d_offset: 0.0
+
+    omega_ff: 0.0
+
+    # ROS 2 flattens nested mappings into dotted parameter names (e.g. `integral_bounds.d.top`)
+    integral_bounds:
+      d:
+        top: 0.3
+        bot: -0.3
+      phi:
+        top: 1.2
+        bot: -1.2
+
+    # TODO: lane filter should publish this information
+    d_resolution: 0.011
+    phi_resolution: 0.051
+
+    stop_line_slowdown:
+      start: 0.4
+      end: 0.1
+
+    verbose: 0

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from typing import List, Optional
 import rclpy
+import yaml
 from rclpy.node import Node
 from rclpy.qos import QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from cv_bridge import CvBridge
 
 from dt_robot_utils import get_robot_params, get_calibration_file
-from dt_state_estimation.lane_filter import LaneFilterHistogram
+from lane_filter.lane_filter_ente import LaneFilterHistogram
 from dt_state_estimation.lane_filter.types import Segment, SegmentColor, SegmentPoint
 from dt_state_estimation.lane_filter.rendering import plot_d_phi
 
@@ -48,7 +49,10 @@ class LaneFilterNode(Node):
 
         self._debug = self.declare_parameter('debug', True).value
         self._predict_freq = float(self.declare_parameter('predict_frequency', 30.0).value)
-        filter_config = self.declare_parameter('lane_filter_histogram_configuration', None).value or {}
+        # ROS 2 parameters cannot hold a nested mapping: the histogram configuration is passed as a
+        # YAML string (the demo launch serializes the `lane_filter_histogram_configuration` block)
+        filter_config_yaml = str(self.declare_parameter('lane_filter_histogram_configuration', '').value)
+        filter_config = yaml.safe_load(filter_config_yaml) if filter_config_yaml.strip() else {}
         # robot-level physical parameters come from /data/config/calibrations/robot/;
         # ROS parameters can still override them
         robot_params = get_robot_params()
@@ -59,9 +63,10 @@ class LaneFilterNode(Node):
 
         if not isinstance(filter_config, dict):
             self.get_logger().warn(
-                'Parameter lane_filter_histogram_configuration is not a dictionary; using empty defaults.'
-            ) # FIXME: this does not seem to use the parameters specified in the config file
+                'Parameter lane_filter_histogram_configuration is not a mapping; using library defaults.'
+            )
             filter_config = {}
+        self.get_logger().info(f'Lane filter histogram configuration: {filter_config or "library defaults"}')
 
         filter_config.setdefault('encoder_resolution', encoder_resolution)
         filter_config.setdefault('wheel_baseline', wheel_baseline)

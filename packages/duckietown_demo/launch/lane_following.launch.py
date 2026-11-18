@@ -125,7 +125,7 @@ def generate_launch_description() -> LaunchDescription:
         parameters=ground_projection_params,
         remappings=[
             # Receive segments from the line detector
-            ("lineseglist_in", "segment_list"),
+            ("~/lineseglist_in", "segment_list"),
             # Camera info from the camera node (/<veh>/camera_node/camera_info)
             ("camera_info", "camera_node/camera_info"),
         ],
@@ -154,7 +154,7 @@ def generate_launch_description() -> LaunchDescription:
         parameters=[lane_filter_params],
         remappings=[
             # Receive ground-projected segments
-            ("segment_list", "lineseglist_out"),
+            ("segment_list", "ground_projection_node/lineseglist_out"),
             # Wheel encoder ticks for the predict step resolve to
             # /<veh>/{left,right}_wheel_encoder_driver_node/tick, which matches the drivers
         ],

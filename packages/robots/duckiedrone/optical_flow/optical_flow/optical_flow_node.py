@@ -510,7 +510,8 @@ class OpticalFlowNode(Node):
     ) -> None:
         """Publish the velocity (forward, left) [m/s] stamped at t [s].
 
-        Only x and y are measured; the other covariances are -1.
+        Only x and y are measured; the other variances are 1e6, the usual
+        ROS "do not trust this axis" value.
         """
         msg = TwistWithCovarianceStamped()
         msg.header.stamp.sec = int(t)
@@ -520,7 +521,7 @@ class OpticalFlowNode(Node):
         msg.twist.twist.linear.y = v_left
         cov = [0.0] * 36
         cov[0] = cov[7] = sigma**2
-        cov[14] = cov[21] = cov[28] = cov[35] = -1.0
+        cov[14] = cov[21] = cov[28] = cov[35] = 1e6
         msg.twist.covariance = cov
         self._pub.publish(msg)
 

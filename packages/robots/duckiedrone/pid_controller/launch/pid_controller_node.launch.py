@@ -1,5 +1,5 @@
 # ruff: noqa: INP001
-"""Launch file for the Duckiedrone PID controller node."""
+"""Launch file for the Duckiedrone height and velocity controller."""
 
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description() -> LaunchDescription:
-    """Generate launch description for the PID controller node."""
+    """Generate the launch description for the controller node."""
     args = [
         DeclareLaunchArgument(
             "robot_name",
@@ -43,10 +43,19 @@ def generate_launch_description() -> LaunchDescription:
             {"use_sim_time": LaunchConfiguration("use_sim_time")},
         ],
         remappings=[
-            ("~/mode", "/mavros/state"),
-            ("~/commands", "/mavros/setpoint_raw/attitude"),
-            ("~/state", "state_estimator_node/state"),
+            ("~/fcu_state", "/mavros/state"),
+            ("~/imu", "/mavros/imu/data"),
+            ("~/battery", "/mavros/battery"),
+            ("~/altitude", "altitude_node/altitude"),
+            ("~/velocity", "optical_flow_node/velocity"),
+            ("~/flow_heartbeat", "optical_flow_node/heartbeat"),
+            ("~/link", "/live_tap/link"),
+            ("~/attitude", "/mavros/setpoint_attitude/attitude"),
+            ("~/thrust", "/mavros/setpoint_attitude/thrust"),
+            ("~/manual_control", "/mavros/manual_control/send"),
             ("~/set_mode", "/mavros/set_mode"),
+            ("~/arming", "/mavros/cmd/arming"),
+            ("~/command", "/mavros/cmd/command"),
         ],
         arguments=[
             "--ros-args",

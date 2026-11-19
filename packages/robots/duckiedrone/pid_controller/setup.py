@@ -26,7 +26,7 @@ setup(
     zip_safe=True,
     maintainer="Duckietown",
     maintainer_email="info@duckietown.com",
-    description="ROS2 PID controller for Duckiedrone.",
+    description="ROS2 height and velocity controller for Duckiedrone.",
     license="Duckietown License",
     tests_require=["pytest"],
     entry_points={

@@ -345,10 +345,13 @@ class OpticalFlowNode(Node):
         if altitude is None:
             self._prev = None
             return
-        gray = cv2.imdecode(
-            np.frombuffer(msg.data, np.uint8),
-            cv2.IMREAD_REDUCED_GRAYSCALE_2,
-        )
+        try:
+            gray = cv2.imdecode(
+                np.frombuffer(msg.data, np.uint8),
+                cv2.IMREAD_REDUCED_GRAYSCALE_2,
+            )
+        except cv2.error:
+            gray = None
         if gray is None:
             self.get_logger().warning("Could not decode a camera frame.")
             self._prev = None

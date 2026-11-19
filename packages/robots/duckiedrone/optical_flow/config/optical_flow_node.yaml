@@ -1,8 +1,5 @@
 /**:
   ros__parameters:
-    process_frequency: 20
-    track_len: 10
-    detect_interval: 5
-    img_scale: 1.0
-    base_homography_height: 0.063
-    flow_scale: 0.90
+    floor_rows: [430, 630]
+    max_corners: 100
+    camera_delay: 0.0

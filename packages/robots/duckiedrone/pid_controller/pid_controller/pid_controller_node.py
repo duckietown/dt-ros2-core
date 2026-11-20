@@ -136,7 +136,7 @@ class PIDControllerNode(Node):
         self.kd_xy = param("xy_kd", 0.15).value
         self.freeze_err = param("xy_freeze_error", 0.20).value
         self.xy_auto = param("xy_at_takeoff", True).value
-        self.land_v = param("land_voltage", 14.3).value
+        self.land_v = param("land_voltage", 0.0).value
 
         self.phase = "idle"
         self.state = State()

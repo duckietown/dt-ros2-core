@@ -13,4 +13,4 @@
     xy_kd: 0.15
     xy_freeze_error: 0.20
     xy_at_takeoff: true
-    land_voltage: 14.3
+    land_voltage: 0.0

@@ -306,8 +306,9 @@ def test_link_loss(sim) -> None:  # noqa: ANN001
 
 
 def test_battery(sim) -> None:  # noqa: ANN001
-    """A short dip flies on, 1 s under land_voltage lands, 0 is off."""
+    """Off by default; set, a short dip flies on, 1 s under it lands."""
     s = sim()
+    s.n.land_v = 14.3
     s.ready()
     s.step(10.0)
     s.n.vbat = 14.2
@@ -319,7 +320,7 @@ def test_battery(sim) -> None:  # noqa: ANN001
     s.step(1.2)
     assert s.n.phase == "land"
     s = sim()
-    s.n.land_v = 0.0
+    assert s.n.land_v == 0.0
     s.ready()
     s.step(10.0)
     s.n.vbat = 13.0

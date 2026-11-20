@@ -512,12 +512,12 @@ class PIDControllerNode(Node):
 
 
 def land_before_exit(node: PIDControllerNode) -> None:
-    """Land before exiting when in flight (up to 20 s)."""
+    """Land before exiting when in flight (up to 12 s)."""
     if node.phase not in ("fly", "land", "failsafe"):
         return
     node.get_logger().warn("exit while flying: landing first")
     node.act("land")
-    t_end = time.monotonic() + 20.0
+    t_end = time.monotonic() + 12.0
     while (
         rclpy.ok()
         and node.phase in ("land", "failsafe")

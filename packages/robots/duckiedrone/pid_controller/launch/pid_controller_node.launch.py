@@ -64,6 +64,7 @@ def generate_launch_description() -> LaunchDescription:
         ],
         output="screen",
         emulate_tty=True,
+        sigterm_timeout="15",
     )
 
     return LaunchDescription([*args, node])

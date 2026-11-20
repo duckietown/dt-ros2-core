@@ -60,6 +60,7 @@ from mavros_msgs.srv import CommandBool, CommandLong, SetMode
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.signals import SignalHandlerOptions
+from rclpy.time import Time
 from sensor_msgs.msg import BatteryState, Imu, Range
 from std_msgs.msg import Empty
 from std_srvs.srv import Trigger
@@ -224,16 +225,23 @@ class PIDControllerNode(Node):
         o = m.orientation
         self.q = (o.x, o.y, o.z, o.w)
 
+    def age(self, m: Range | TwistWithCovarianceStamped) -> float:
+        """Seconds since the message was measured, from its stamp."""
+        dt = self.get_clock().now() - Time.from_msg(m.header.stamp)
+        return max(0.0, dt.nanoseconds * 1e-9)
+
     def on_alt(self, m: Range) -> None:
-        """Keep the height."""
-        if math.isfinite(m.range):
-            self.h, self.h_t = m.range, time.monotonic()
+        """Keep the height, unless it is already older than H_STALE."""
+        age = self.age(m)
+        if math.isfinite(m.range) and age < H_STALE:
+            self.h, self.h_t = m.range, time.monotonic() - age
 
     def on_flow(self, m: TwistWithCovarianceStamped) -> None:
-        """Keep the velocity [m/s], body forward and left."""
+        """Keep the velocity [m/s], body forward and left, if fresh."""
         v = (m.twist.twist.linear.x, m.twist.twist.linear.y)
-        if math.isfinite(v[0]) and math.isfinite(v[1]):
-            self.v, self.v_t = v, time.monotonic()
+        age = self.age(m)
+        if math.isfinite(v[0]) and math.isfinite(v[1]) and age < FLOW_STALE:
+            self.v, self.v_t = v, time.monotonic() - age
 
     def on_hb(self, _: Empty) -> None:
         """Note a flow heartbeat."""

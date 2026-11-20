@@ -12,6 +12,7 @@ for m in (
     "rclpy",
     "rclpy.qos",
     "rclpy.signals",
+    "rclpy.time",
     "geometry_msgs",
     "geometry_msgs.msg",
     "mavros_msgs",
@@ -58,6 +59,7 @@ class Sim:
         self.clock = clock
         clock[0] = 1000.0
         self.n = H.PIDControllerNode()
+        self.n.age = lambda m: getattr(m, "age", 0.0)
         self.z = self.v = self.t = self.nxt = 0.0
         self.hist = [0.0]
         self.pin = None
@@ -192,6 +194,20 @@ def test_nan_flow_dropped_and_d_reset(sim) -> None:  # noqa: ANN001
     assert s.n.dx != 0.0
     s.n.xy(s.clock[0] + 1.0)
     assert s.n.dx == 0.0
+
+
+def test_old_readings_ignored(sim) -> None:  # noqa: ANN001
+    """Height and flow measured too long ago are ignored."""
+    s = sim()
+    s.step(2.0)
+    s.n.on_alt(NS(range=0.2, age=H.H_STALE + 0.1))
+    assert s.n.h != 0.2
+    v = NS(linear=NS(x=0.5, y=0.0))
+    s.n.on_flow(NS(twist=NS(twist=v), age=H.FLOW_STALE + 0.1))
+    assert s.n.v != (0.5, 0.0)
+    s.n.on_alt(NS(range=0.2, age=0.25))
+    assert s.n.h == 0.2
+    assert s.n.h_t == pytest.approx(s.clock[0] - 0.25)
 
 
 def test_xy_on_needs_heartbeats(sim) -> None:  # noqa: ANN001

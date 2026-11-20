@@ -63,11 +63,13 @@ class Sim:
         self.z = self.v = self.t = self.nxt = 0.0
         self.hist = [0.0]
         self.pin = None
+        self.lost = False
         self.n.state = NS(armed=False, mode="STABILIZED", system_status=3)
 
     def feed(self) -> None:
-        """Height and flow heartbeat into the node."""
-        self.n.on_alt(NS(range=self.hist[max(0, len(self.hist) - 34)]))
+        """Height (unless lost) and flow heartbeat into the node."""
+        if not self.lost:
+            self.n.on_alt(NS(range=self.hist[max(0, len(self.hist) - 34)]))
         self.n.hb_t = self.clock[0]
 
     def ready(self) -> tuple[bool, str]:
@@ -164,6 +166,42 @@ def test_failsafe_left_on_disarm(sim) -> None:  # noqa: ANN001
     s.step(0.2)
     assert s.n.phase == "idle"
     assert s.n.thr == 0.0
+
+
+def test_land_cannot_delay_failsafe_kill(sim) -> None:  # noqa: ANN001
+    """LAND while the height is lost keeps the 6 s kill timer."""
+    s = sim()
+    s.ready()
+    s.step(10.0)
+    s.lost = True
+    s.step(0.5)
+    assert s.n.phase == "failsafe"
+    fs_since = s.n.fs_since
+    for _ in range(4):
+        assert not s.n.act("land")[0]
+        s.step(1.5)
+    assert s.n.fs_since == fs_since
+    assert s.n.phase == "idle"
+    assert s.n.thr == 0.0
+
+
+def test_land_after_height_returns_goes_down(sim) -> None:  # noqa: ANN001
+    """LAND after the height returns goes down, not up first."""
+    s = sim()
+    s.ready()
+    s.step(10.0)
+    s.lost = True
+    s.step(0.7)
+    s.lost = False
+    s.step(0.2)
+    assert s.n.phase == "failsafe"
+    z0 = s.z
+    assert s.n.act("land")[0]
+    z_max = z0
+    for _ in range(40):
+        s.step(0.05)
+        z_max = max(z_max, s.z)
+    assert z_max < z0 + 0.05, f"climbed {z_max - z0:.3f} m"
 
 
 def test_integral_bounded_when_pinned(sim) -> None:  # noqa: ANN001

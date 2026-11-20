@@ -321,6 +321,12 @@ class PIDControllerNode(Node):
             xy = ", xy on" if self.xy_auto else ""
             return True, f"climbing to {self.target} m{xy}"
         if a == "land":
+            now = time.monotonic()
+            h_ok = self.h_t is not None and now - self.h_t < H_STALE
+            if self.phase == "failsafe" and not h_ok:
+                return False, "height lost: failsafe descent continues"
+            if self.phase == "failsafe":
+                self.sp, self.e_prev = min(self.sp, self.h), None
             if self.phase in ("fly", "failsafe"):
                 self.phase, self.cut_rate = "land", None
             return True, "landing"

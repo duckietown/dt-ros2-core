@@ -540,6 +540,17 @@ def land_before_exit(node: PIDControllerNode) -> None:
         rclpy.spin_once(node, timeout_sec=0.05)
 
 
+def kill_on_exit(node: PIDControllerNode) -> None:
+    """Force-disarm on exit, unless PX4 has left OFFBOARD."""
+    if node.state.mode != "OFFBOARD":
+        node.get_logger().warn(
+            f"PX4 is in charge (mode {node.state.mode}): "
+            "not cutting the motors",
+        )
+        return
+    node.act("kill")
+
+
 def main(args: list[str] | None = None) -> None:
     """Run the controller; on exit land first, then force-disarm."""
     rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
@@ -554,7 +565,7 @@ def main(args: list[str] | None = None) -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        node.act("kill")
+        kill_on_exit(node)
         t_end = time.monotonic() + 1.0
         while rclpy.ok() and time.monotonic() < t_end:
             rclpy.spin_once(node, timeout_sec=0.05)

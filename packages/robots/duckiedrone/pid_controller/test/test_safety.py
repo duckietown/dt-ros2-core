@@ -270,6 +270,21 @@ def test_exit_in_flight_lands(sim, monkeypatch) -> None:  # noqa: ANN001
     assert s.z < 0.01
 
 
+def test_exit_leaves_px4_takeover_alone(sim) -> None:  # noqa: ANN001
+    """On exit, force-disarm only while PX4 is in OFFBOARD."""
+    s = sim()
+    s.ready()
+    s.step(10.0)
+    s.n.state = NS(armed=True, mode="AUTO.LAND", system_status=4)
+    s.step(0.2)
+    s.n.cli_cmd = MagicMock()
+    H.kill_on_exit(s.n)
+    s.n.cli_cmd.call_async.assert_not_called()
+    s.n.state = OK
+    H.kill_on_exit(s.n)
+    s.n.cli_cmd.call_async.assert_called_once()
+
+
 def test_link_loss(sim) -> None:  # noqa: ANN001
     """No link ever: keeps flying; gap 1.5 s: flying; over 2 s: lands."""
     s = sim()

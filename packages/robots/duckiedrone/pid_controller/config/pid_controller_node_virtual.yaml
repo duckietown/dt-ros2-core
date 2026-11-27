@@ -1,0 +1,18 @@
+# Virtual Duckiedrone (Duckiematrix) values, tuned on 2026-11-27 at 0.6-0.7x
+# sim speed: overshoot 3-7 cm at takeoff, settled in about 7 s, then within
+# 1 cm. Slower sims overshoot more (40 cm at 0.25x), hence max_height 1.5.
+/**:
+  ros__parameters:
+    hover_height: 0.6
+    max_height: 1.5
+    thrust_hover: 0.70
+    thrust_max: 0.85
+    thrust_kp: 0.15
+    thrust_ki: 0.01
+    thrust_kd: 0.30
+    xy_kp: 3.0
+    xy_ki: 0.6
+    xy_kd: 0.15
+    xy_freeze_error: 0.03
+    xy_at_takeoff: true
+    land_voltage: 0.0

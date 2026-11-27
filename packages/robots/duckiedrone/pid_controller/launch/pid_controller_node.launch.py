@@ -1,6 +1,7 @@
 # ruff: noqa: INP001
 """Launch file for the Duckiedrone height and velocity controller."""
 
+import os
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
@@ -31,7 +32,11 @@ def generate_launch_description() -> LaunchDescription:
     ]
 
     pkg_dir = Path(get_package_share_directory("pid_controller"))
-    config_file = str(pkg_dir / "config" / "pid_controller_node.yaml")
+    virtual = os.environ.get("ROBOT_HARDWARE") == "virtual"
+    hardware = "virtual" if virtual else "physical"
+    config_file = str(
+        pkg_dir / "config" / f"pid_controller_node_{hardware}.yaml",
+    )
 
     node = Node(
         package="pid_controller",
